@@ -31,6 +31,8 @@ struct EditorView: NSViewRepresentable {
         textView.isContinuousSpellCheckingEnabled = true
 
         textView.string = text
+        textView.typingAttributes = MarkdownHighlighter.baseAttributes
+        if let storage = textView.textStorage { MarkdownHighlighter.apply(to: storage) }
         return scrollView
     }
 
@@ -39,6 +41,7 @@ struct EditorView: NSViewRepresentable {
         // 只在外部（如 Versions 回滚、磁盘重载）改动时回写，避免每次按键重置光标。
         if textView.string != text {
             textView.string = text
+            if let storage = textView.textStorage { MarkdownHighlighter.apply(to: storage) }
         }
     }
 
@@ -52,6 +55,10 @@ struct EditorView: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             text.wrappedValue = textView.string
+            // 中文输入法组字期间（marked text）不重染：改属性会打断候选框定位。提交后会再来一次 textDidChange。
+            guard !textView.hasMarkedText(), let storage = textView.textStorage else { return }
+            MarkdownHighlighter.apply(to: storage)
+            textView.typingAttributes = MarkdownHighlighter.baseAttributes
         }
     }
 }

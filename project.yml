@@ -54,3 +54,27 @@ targets:
         ENABLE_USER_SCRIPT_SANDBOXING: YES
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
+  NibTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [NibTests]
+    dependencies:
+      - target: Nib
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.chengffei.nib.tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "6.0"
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+schemes:
+  Nib:
+    build:
+      targets:
+        Nib: all
+        NibTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: [NibTests]

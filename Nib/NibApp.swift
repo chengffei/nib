@@ -66,6 +66,23 @@ struct EditorCommands: Commands {
             item("Actual Size", "nib.zoom(0)", "0")
             Divider()
         }
+        CommandGroup(before: .windowList) {
+            // ⌘1 到 ⌘8 按位置切标签，⌘9 固定去最后一个，和 Safari 一致。
+            ForEach(1...9, id: \.self) { number in
+                Button(number == 9 ? "Show Last Tab" : "Show Tab \(number)") { Self.selectTab(number) }
+                    .keyboardShortcut(KeyEquivalent(Character("\(number)")), modifiers: .command)
+            }
+            Divider()
+        }
+    }
+
+    @MainActor
+    private static func selectTab(_ number: Int) {
+        // 先看 tabbedWindows 再碰 tabGroup，原因见 EditorHost.isSelectedTab。
+        guard let window = NSApp.keyWindow ?? NSApp.mainWindow, let tabs = window.tabbedWindows, !tabs.isEmpty else { return }
+        let target = number == 9 ? tabs[tabs.count - 1] : (number <= tabs.count ? tabs[number - 1] : nil)
+        guard let target, target !== window else { return }
+        window.tabGroup?.selectedWindow = target
     }
 
     private func item(_ title: String, _ script: String, _ key: KeyEquivalent, _ modifiers: EventModifiers = .command) -> some View {

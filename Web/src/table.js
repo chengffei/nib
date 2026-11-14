@@ -2,7 +2,7 @@
 import { Decoration, EditorView, WidgetType, keymap } from '@codemirror/view'
 import { Prec, StateField } from '@codemirror/state'
 import { syntaxTree } from '@codemirror/language'
-import { activeRanges, post, reading, resolveImage, touches } from './livePreview.js'
+import { activeRanges, links, reading, resolveImage, touches } from './livePreview.js'
 
 function splitRow(line) {
   let s = line.trim()
@@ -79,7 +79,7 @@ class TableWidget extends WidgetType {
       const link = event.target.closest?.('[data-href]')
       if (link && (event.metaKey || isReading)) {
         event.preventDefault()
-        post({ type: 'open', url: link.dataset.href })
+        links.open(link.dataset.href)
         return
       }
       // 阅读时不进源码，留给系统做文字选择

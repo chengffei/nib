@@ -18,6 +18,9 @@ export function activeRanges(state) {
 
 export const touches = (act, from, to) => act.some((r) => r.from <= to && r.to >= from)
 
+/** 点链接时调；main.js 会换成能处理文内锚点的版本。 */
+export const links = { open: (href) => post({ type: 'open', url: href }) }
+
 export function post(message) {
   window.webkit?.messageHandlers?.nib?.postMessage(message)
 }

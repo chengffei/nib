@@ -3,7 +3,7 @@ import { Annotation, Compartment, EditorSelection, EditorState } from '@codemirr
 import { EditorView, keymap } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap, indentWithTab, redo, undo } from '@codemirror/commands'
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
-import { HighlightStyle, LanguageDescription, StreamLanguage, syntaxHighlighting } from '@codemirror/language'
+import { HighlightStyle, LanguageDescription, StreamLanguage, ensureSyntaxTree, syntaxHighlighting } from '@codemirror/language'
 import { highlightSelectionMatches, openSearchPanel, search, searchKeymap } from '@codemirror/search'
 import { tags as t } from '@lezer/highlight'
 import { javascript } from '@codemirror/lang-javascript'
@@ -19,7 +19,7 @@ import { java } from '@codemirror/lang-java'
 import { cpp } from '@codemirror/lang-cpp'
 import { shell } from '@codemirror/legacy-modes/mode/shell'
 import { swift } from '@codemirror/legacy-modes/mode/swift'
-import { livePreview, post, reading } from './livePreview.js'
+import { links, livePreview, post, reading } from './livePreview.js'
 import { tables } from './table.js'
 
 const lang = (name, alias, support) => LanguageDescription.of({ name, alias, support })
@@ -184,23 +184,49 @@ function setMode(next) {
 const toggleEdit = () => setMode(mode === 'read' ? 'edit' : 'read')
 const toggleSource = () => setMode(mode === 'source' ? 'edit' : 'source')
 
+// ---- 链接 ----
+
+const slug = (text) =>
+  text
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, '')
+    .replace(/\s+/g, '-')
+
+/** 文内锚点 #标题：滚到对应标题。 */
+function scrollToHeading(anchor) {
+  let want
+  try {
+    want = slug(decodeURIComponent(anchor))
+  } catch {
+    want = slug(anchor)
+  }
+  const { state } = view
+  const tree = ensureSyntaxTree(state, state.doc.length, 300)
+  if (!tree) return
+  let pos = -1
+  tree.iterate({
+    enter(n) {
+      if (pos >= 0) return false
+      if (!/^(ATX|Setext)Heading/.test(n.name)) return n.name === 'Document'
+      const title = state.doc.sliceString(n.from, n.to).split('\n')[0].replace(/^#+\s*|\s*#+\s*$/g, '')
+      if (slug(title) === want) pos = n.from
+      return false
+    },
+  })
+  if (pos >= 0) view.dispatch({ effects: EditorView.scrollIntoView(pos, { y: 'start', yMargin: 24 }) })
+}
+
+links.open = (href) => {
+  if (href.startsWith('#')) scrollToHeading(href.slice(1))
+  else post({ type: 'open', url: href })
+}
+
 // ---- 启动 ----
 
-const initial = typeof window.__nibInitialText === 'string' ? window.__nibInitialText : ''
-if (initial.includes('\r\n')) lineBreak = '\r\n'
-// 空文档没什么可读的，直接进编辑
-if (initial.trim() === '') mode = 'edit'
-document.body.dataset.mode = mode
-try {
-  const saved = parseFloat(localStorage.getItem(FONT_KEY))
-  if (saved) document.documentElement.style.setProperty('--fs', `${saved}px`)
-} catch {}
-measureMono()
-
-const view = new EditorView({
-  parent: document.body,
-  state: EditorState.create({
-    doc: initial,
+function makeState(doc) {
+  return EditorState.create({
+    doc,
     extensions: [
       history(),
       EditorView.lineWrapping,
@@ -224,7 +250,7 @@ const view = new EditorView({
           // 阅读时单击即开链接；编辑时要按住 ⌘，否则没法把光标点进链接里
           const link = (event.metaKey || mode === 'read') && event.target.closest?.('[data-href]')
           if (!link) return false
-          post({ type: 'open', url: link.dataset.href })
+          links.open(link.dataset.href)
           event.preventDefault()
           return true
         },
@@ -243,17 +269,87 @@ const view = new EditorView({
         scheduleFlush()
       }),
     ],
-  }),
+  })
+}
+
+try {
+  const saved = parseFloat(localStorage.getItem(FONT_KEY))
+  if (saved) document.documentElement.style.setProperty('--fs', `${saved}px`)
+} catch {}
+measureMono()
+
+// 先建一个空编辑器：外壳会提前把它预热好，开文档时只需要 load 填内容。
+mode = 'edit'
+document.body.dataset.mode = mode
+const view = new EditorView({ parent: document.body, state: makeState('') })
+
+/** 装入一篇文档：全新的状态（撤销历史清空），有内容进阅读，空文档进编辑。 */
+function load(text, baseDir) {
+  window.__nibBaseDir = baseDir || null
+  lineBreak = text.includes('\r\n') ? '\r\n' : '\n'
+  mode = text.trim() === '' ? 'edit' : 'read'
+  document.body.dataset.mode = mode
+  view.setState(makeState(text))
+  view.scrollDOM.scrollTop = 0
+  if (mode !== 'read') view.focus()
+  post({ type: 'ready', mode })
+}
+
+// 阅读模式的键盘：空格翻页，方向键滚动，不用碰鼠标。
+window.addEventListener('keydown', (event) => {
+  if (mode !== 'read' || event.ctrlKey || event.altKey) return
+  if (event.target.closest?.('input, textarea, button')) return
+  const scroller = view.scrollDOM
+  const page = scroller.clientHeight * 0.9
+  let top = null
+  let smooth = true
+  if (event.metaKey) {
+    if (event.key === 'ArrowUp') top = 0
+    else if (event.key === 'ArrowDown') top = scroller.scrollHeight
+  } else if (event.key === ' ') top = scroller.scrollTop + (event.shiftKey ? -page : page)
+  else if (event.key === 'PageDown') top = scroller.scrollTop + page
+  else if (event.key === 'PageUp') top = scroller.scrollTop - page
+  else if (event.key === 'Home') top = 0
+  else if (event.key === 'End') top = scroller.scrollHeight
+  else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    top = scroller.scrollTop + (event.key === 'ArrowDown' ? 64 : -64)
+    smooth = false
+  }
+  if (top === null) return
+  event.preventDefault()
+  scroller.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' })
 })
 
 window.nib = {
-  /** 外部改动（Versions 回滚、磁盘重载）才会调；不回传 change。 */
+  load,
+  /** 外部改动（磁盘上的文件被改写、Versions 回滚）才会调；不回传 change。
+   *  只替换变了的那一段，滚动位置不动；原本停在末尾的继续跟到末尾。 */
   setText(text) {
     lineBreak = text.includes('\r\n') ? '\r\n' : '\n'
+    const next = text.replace(/\r\n?/g, '\n')
+    const prev = view.state.doc.toString()
+    if (prev === next) return
+    const max = Math.min(prev.length, next.length)
+    let start = 0
+    while (start < max && prev.charCodeAt(start) === next.charCodeAt(start)) start++
+    let endPrev = prev.length
+    let endNext = next.length
+    while (endPrev > start && endNext > start && prev.charCodeAt(endPrev - 1) === next.charCodeAt(endNext - 1)) {
+      endPrev--
+      endNext--
+    }
+    const scroller = view.scrollDOM
+    const top = scroller.scrollTop
+    const atBottom = top > 0 && top + scroller.clientHeight >= scroller.scrollHeight - 48
     view.dispatch({
-      changes: { from: 0, to: view.state.doc.length, insert: text },
+      changes: { from: start, to: endPrev, insert: next.slice(start, endNext) },
       annotations: external.of(true),
     })
+    const restore = () => {
+      scroller.scrollTop = atBottom ? scroller.scrollHeight : top
+    }
+    restore()
+    requestAnimationFrame(restore)
   },
   getText: currentText,
   undo: () => undo(view),
@@ -272,5 +368,6 @@ window.nib = {
   view,
 }
 
-if (mode !== 'read') view.focus()
-post({ type: 'ready', mode })
+// scripts/webcheck.swift 走这条：正文在页面加载前就注入好了。正式的 app 等外壳来调 load。
+if (typeof window.__nibInitialText === 'string') load(window.__nibInitialText, window.__nibBaseDir)
+else post({ type: 'boot', ms: Math.round(performance.now()) })

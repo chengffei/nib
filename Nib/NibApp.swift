@@ -4,6 +4,7 @@ import SwiftUI
 struct NibApp: App {
     static let launchedAt = Date()
     static let debug = ProcessInfo.processInfo.environment["NIB_DEBUG"] != nil
+    @MainActor static var evalOnce = debug ? ProcessInfo.processInfo.environment["NIB_EVAL"] : nil
 
     /// 调试输出，只在 NIB_DEBUG 下写到标准错误。
     static func log(_ message: @autoclosure () -> String) {
@@ -16,6 +17,10 @@ struct NibApp: App {
         Self.log("app init")
         // 只对 Nib 生效：打开文稿时总是合并成标签页，不受系统「偏好标签页」设置影响。
         UserDefaults.standard.set("always", forKey: "AppleWindowTabbingMode")
+        // 启动时不恢复上次的窗口：点开一篇就只加载这一篇。
+        UserDefaults.standard.set(false, forKey: "NSQuitAlwaysKeepsWindows")
+        // 趁 SwiftUI 还在搭窗口，先把编辑器内核加载起来。
+        EditorPool.shared.prewarm()
     }
 
     var body: some Scene {
@@ -80,6 +85,7 @@ struct DocumentView: View {
             .background(Color(nsColor: .textBackgroundColor))
             .frame(minWidth: 480, minHeight: 320)
             .focusedSceneValue(\.editorController, controller)
+            .task(id: fileURL) { controller.watch(fileURL) }
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Picker("Mode", selection: Binding(get: { controller.mode }, set: { controller.setMode($0) })) {

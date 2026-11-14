@@ -62,26 +62,27 @@ struct EditorView: NSViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator(text: $text, controller: controller) }
 
-    func makeNSView(context: Context) -> EditorWebView {
+    func makeNSView(context: Context) -> EditorHost {
         NibApp.log("makeNSView len=\(text.utf16.count)")
         let coordinator = context.coordinator
-        let webView = EditorPool.shared.take()
-        webView.target = coordinator
-        controller.webView = webView
-        coordinator.lastText = text
         coordinator.lastBase = baseDirectory
-        webView.send("nib.load(text, base)", ["text": text, "base": baseDirectory ?? NSNull()])
-        return webView
+        let host = EditorHost(coordinator: coordinator)
+        coordinator.host = host
+        host.wake()
+        return host
     }
 
-    func updateNSView(_ webView: EditorWebView, context: Context) {
+    func updateNSView(_ host: EditorHost, context: Context) {
         let coordinator = context.coordinator
+        coordinator.text = $text
         if baseDirectory != coordinator.lastBase {
             coordinator.lastBase = baseDirectory
-            webView.send("nib.setBaseDir(base)", ["base": baseDirectory ?? NSNull()])
+            host.webView?.send("nib.setBaseDir(base)", ["base": baseDirectory ?? NSNull()])
         }
         // 只有外部改动（磁盘重载、Versions 回滚）才推给网页；自己打的字不回推，否则光标会被重置。
         guard text != coordinator.lastText else { return }
+        // 休眠中的标签没有内核，醒来时会直接装入最新正文。
+        guard let webView = host.webView else { return }
         NibApp.log("push external len=\(text.utf16.count)")
         coordinator.lastText = text
         webView.send("nib.setText(text)", ["text": text])
@@ -93,6 +94,7 @@ struct EditorView: NSViewRepresentable {
         let controller: EditorController
         var lastText = ""
         var lastBase: String?
+        weak var host: EditorHost?
 
         init(text: Binding<String>, controller: EditorController) {
             self.text = text
@@ -110,6 +112,7 @@ struct EditorView: NSViewRepresentable {
             case "ready":
                 if let mode = (body["mode"] as? String).flatMap(EditorMode.init) { controller.mode = mode }
                 NibApp.log("ready")
+                host?.didBecomeReady()
                 // 调试用：NIB_EVAL 里的脚本在第一篇文档就绪后执行一次，用来不抢键盘地测真实窗口。
                 if let script = NibApp.evalOnce {
                     NibApp.evalOnce = nil
@@ -241,12 +244,169 @@ final class EditorWebView: WKWebView {
         }
         target?.handle(type, body)
     }
+}
+
+/// SwiftUI 持有的是这个容器；里面的网页内核可以在标签转到后台后卸掉，回来时再装。
+final class EditorHost: NSView {
+    let coordinator: EditorView.Coordinator
+    private(set) var webView: EditorWebView?
+    private var placeholder: NSImageView?
+    private var savedScroll = 0.0
+    private var hibernating = false
+    var lastSelected = Date()
+
+    init(coordinator: EditorView.Coordinator) {
+        self.coordinator = coordinator
+        super.init(frame: NSRect(x: 0, y: 0, width: 860, height: 900))
+        EditorHibernator.shared.register(self)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError() }
+
+    /// 这个标签是不是所在窗口里正显示的那一个。
+    var isSelectedTab: Bool {
+        guard let window else { return false }
+        // 先看 tabbedWindows：窗口还没并进标签组时去读 tabGroup，系统会给它单独建一个组，之后就不再自动合并标签了。
+        guard window.tabbedWindows != nil, let selected = window.tabGroup?.selectedWindow else { return true }
+        return selected === window
+    }
+
+    var canHibernate: Bool { webView != nil && !hibernating && coordinator.controller.mode == .read }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         // 新打开的文档并进现有窗口的标签页，不另开窗口。
         window?.tabbingMode = .preferred
-        window?.makeFirstResponder(self)
+        if let webView { window?.makeFirstResponder(webView) }
+        EditorHibernator.shared.scheduleEvaluate()
+    }
+
+    /// 装上内核并载入当前正文。新开文档和从休眠回来都走这里。
+    func wake() {
+        guard webView == nil else { return }
+        if placeholder != nil { NibApp.log("wake from hibernation") }
+        let webView = EditorPool.shared.take()
+        webView.frame = bounds
+        webView.autoresizingMask = [.width, .height]
+        addSubview(webView, positioned: .below, relativeTo: placeholder)
+        webView.target = coordinator
+        self.webView = webView
+        coordinator.controller.webView = webView
+        let text = coordinator.text.wrappedValue
+        coordinator.lastText = text
+        webView.send("nib.load(text, base, top)",
+                     ["text": text, "base": coordinator.lastBase ?? NSNull(), "top": savedScroll])
+        window?.makeFirstResponder(webView)
+    }
+
+    func didBecomeReady() {
+        guard let placeholder else { return }
+        self.placeholder = nil
+        // 内核画出第一帧之后再撤掉截图，中间不闪。
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) { placeholder.removeFromSuperview() }
+    }
+
+    /// 截图压成 PNG 再留着：原始位图一张十几兆，压完几百 KB，要显示时才解码。
+    private func showPlaceholder(_ image: NSImage?) {
+        guard let cgImage = image?.cgImage(forProposedRect: nil, context: nil, hints: nil), let size = image?.size else { return }
+        let view = NSImageView(frame: bounds)
+        view.imageScaling = .scaleNone
+        view.imageAlignment = .alignTopLeft
+        view.autoresizingMask = [.width, .height]
+        addSubview(view)
+        placeholder = view
+        DispatchQueue.global(qos: .utility).async {
+            let data = NSBitmapImageRep(cgImage: cgImage).representation(using: .png, properties: [:])
+            DispatchQueue.main.async { [weak view] in
+                guard let view, let data, let compressed = NSImage(data: data) else { return }
+                compressed.size = size
+                view.image = compressed
+            }
+        }
+    }
+
+    /// 卸掉内核，留一张截图占位。只对阅读模式的后台标签做：编辑中的标签卸了会丢撤销历史。
+    func hibernate() {
+        guard canHibernate, let webView else { return }
+        hibernating = true
+        webView.evaluateJavaScript("nib.view.scrollDOM.scrollTop") { [weak self] result, _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                let top = (result as? NSNumber)?.doubleValue ?? 0
+                webView.takeSnapshot(with: nil) { [weak self] image, _ in
+                    MainActor.assumeIsolated {
+                        guard let self else { return }
+                        self.hibernating = false
+                        // 等截图的这点时间里用户切回来了，或者进了编辑，就不卸。
+                        guard self.webView === webView, !self.isSelectedTab, self.coordinator.controller.mode == .read else { return }
+                        self.savedScroll = top
+                        self.showPlaceholder(image)
+                        webView.target = nil
+                        webView.removeFromSuperview()
+                        self.webView = nil
+                        NibApp.log("hibernated, snapshot \(image != nil ? "ok" : "none"), scroll \(Int(top))")
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// 管哪些后台标签留着内核。每个内核是一个 50 到 100 MB 的网页进程，标签一多就得卸。
+@MainActor
+final class EditorHibernator {
+    static let shared = EditorHibernator()
+    /// 除了正显示的标签，再留几个最近用过的不卸，来回切换时不用等。
+    static let keepAlive = 2
+    private var hosts: [WeakHost] = []
+    private var scheduled = false
+
+    private struct WeakHost { weak var host: EditorHost? }
+
+    private init() {
+        let center = NotificationCenter.default
+        for name in [NSWindow.didBecomeKeyNotification, NSWindow.didChangeOcclusionStateNotification] {
+            center.addObserver(forName: name, object: nil, queue: .main) { _ in
+                MainActor.assumeIsolated {
+                    // 唤醒不等：切到休眠的标签要马上装内核。卸内核不急，等界面落定再算。
+                    EditorHibernator.shared.wakeSelected()
+                    EditorHibernator.shared.scheduleEvaluate()
+                }
+            }
+        }
+    }
+
+    func register(_ host: EditorHost) {
+        hosts.append(WeakHost(host: host))
+    }
+
+    func scheduleEvaluate() {
+        guard !scheduled else { return }
+        scheduled = true
+        // 切标签时会连着来好几条通知，等界面落定再算一次。
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            self?.scheduled = false
+            self?.evaluate()
+        }
+    }
+
+    func wakeSelected() {
+        let now = Date()
+        for host in hosts.compactMap(\.host) where host.isSelectedTab {
+            host.lastSelected = now
+            host.wake()
+        }
+    }
+
+    private func evaluate() {
+        hosts.removeAll { $0.host == nil }
+        wakeSelected()
+        let live = hosts.compactMap(\.host).filter { $0.window != nil }
+        let background = live.filter { !$0.isSelectedTab && $0.webView != nil }
+            .sorted { $0.lastSelected > $1.lastSelected }
+        NibApp.log("evaluate hosts=\(hosts.count) live=\(live.count) selected=\(live.filter(\.isSelectedTab).count) background=\(background.count)")
+        for host in background.dropFirst(Self.keepAlive) { host.hibernate() }
     }
 }
 

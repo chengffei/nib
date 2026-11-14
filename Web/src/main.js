@@ -283,8 +283,9 @@ mode = 'edit'
 document.body.dataset.mode = mode
 const view = new EditorView({ parent: document.body, state: makeState('') })
 
-/** 装入一篇文档：全新的状态（撤销历史清空），有内容进阅读，空文档进编辑。 */
-function load(text, baseDir) {
+/** 装入一篇文档：全新的状态（撤销历史清空），有内容进阅读，空文档进编辑。
+ *  top 是从休眠回来时要恢复的滚动位置。 */
+function load(text, baseDir, top) {
   window.__nibBaseDir = baseDir || null
   lineBreak = text.includes('\r\n') ? '\r\n' : '\n'
   mode = text.trim() === '' ? 'edit' : 'read'
@@ -292,7 +293,22 @@ function load(text, baseDir) {
   view.setState(makeState(text))
   view.scrollDOM.scrollTop = 0
   if (mode !== 'read') view.focus()
-  post({ type: 'ready', mode })
+  if (!(top > 0)) {
+    post({ type: 'ready', mode })
+    return
+  }
+  // 行高要等排版量过才准，隔两帧各设一次，再报就绪
+  const restore = () => {
+    view.scrollDOM.scrollTop = top
+  }
+  restore()
+  requestAnimationFrame(() => {
+    restore()
+    requestAnimationFrame(() => {
+      restore()
+      post({ type: 'ready', mode })
+    })
+  })
 }
 
 // 阅读模式的键盘：空格翻页，方向键滚动，不用碰鼠标。

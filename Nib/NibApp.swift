@@ -8,11 +8,12 @@ struct NibApp: App {
     /// 调试输出，只在 NIB_DEBUG 下写到标准错误。
     static func log(_ message: @autoclosure () -> String) {
         guard debug else { return }
-        FileHandle.standardError.write(Data("NIB \(message())\n".utf8))
+        FileHandle.standardError.write(Data("NIB \(Int(Date().timeIntervalSince1970 * 1000)) \(message())\n".utf8))
     }
 
     init() {
         _ = Self.launchedAt
+        Self.log("app init")
         // 只对 Nib 生效：打开文稿时总是合并成标签页，不受系统「偏好标签页」设置影响。
         UserDefaults.standard.set("always", forKey: "AppleWindowTabbingMode")
     }

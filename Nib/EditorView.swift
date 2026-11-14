@@ -35,6 +35,7 @@ struct EditorView: NSViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(text: $text, controller: controller) }
 
     func makeNSView(context: Context) -> WKWebView {
+        NibApp.log("makeNSView len=\(text.utf16.count)")
         let coordinator = context.coordinator
         let config = WKWebViewConfiguration()
         config.userContentController.add(coordinator, name: "nib")

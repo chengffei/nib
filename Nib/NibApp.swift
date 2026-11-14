@@ -20,7 +20,7 @@ struct NibApp: App {
     var body: some Scene {
         // DocumentGroup 在 macOS 上由 NSDocument 驱动：自动保存、Versions、窗口标签页、Open Recent 全部白送。
         DocumentGroup(newDocument: MarkdownDocument()) { file in
-            DocumentView(text: file.$document.text)
+            DocumentView(text: file.$document.text, fileURL: file.fileURL)
         }
         .defaultSize(width: 860, height: 900)
         .commands { EditorCommands() }
@@ -71,10 +71,11 @@ struct EditorCommands: Commands {
 
 struct DocumentView: View {
     @Binding var text: String
+    let fileURL: URL?
     @StateObject private var controller = EditorController()
 
     var body: some View {
-        EditorView(text: $text, controller: controller)
+        EditorView(text: $text, baseDirectory: fileURL?.deletingLastPathComponent().path, controller: controller)
             .background(Color(nsColor: .textBackgroundColor))
             .frame(minWidth: 480, minHeight: 320)
             .focusedSceneValue(\.editorController, controller)

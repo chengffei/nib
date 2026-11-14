@@ -264,6 +264,11 @@ window.nib = {
   mode: () => mode,
   zoom: (delta) => setFontSize(delta === 0 ? 16 : fontSize() + delta),
   find: () => openSearchPanel(view),
+  /** 文档另存或移动后，相对路径的图片要按新目录重新解析。 */
+  setBaseDir(dir) {
+    window.__nibBaseDir = dir
+    view.dispatch({ selection: view.state.selection })
+  },
   view,
 }
 

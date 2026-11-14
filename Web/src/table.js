@@ -2,7 +2,7 @@
 import { Decoration, EditorView, WidgetType, keymap } from '@codemirror/view'
 import { Prec, StateField } from '@codemirror/state'
 import { syntaxTree } from '@codemirror/language'
-import { activeRanges, post, reading, touches } from './livePreview.js'
+import { activeRanges, post, reading, resolveImage, touches } from './livePreview.js'
 
 function splitRow(line) {
   let s = line.trim()
@@ -34,7 +34,11 @@ function inline(source) {
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>')
     .replace(/~~([^~]+)~~/g, '<del>$1</del>')
-    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<span class="nib-link" data-href="$2">$1</span>')
+    .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (source, alt, src) => {
+      const url = resolveImage(src.replace(/&amp;/g, '&'))
+      return url ? `<img class="nib-img" alt="${alt}" src="${escapeHTML(url)}">` : source
+    })
+    .replace(/(^|[^!])\[([^\]]+)\]\(([^)\s]+)\)/g, '$1<span class="nib-link" data-href="$3">$2</span>')
     .replace(/&lt;br\s*\/?&gt;/g, '<br>')
 }
 

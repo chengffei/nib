@@ -58,6 +58,9 @@ html, body { margin: 0; height: 100%; background: transparent; }
 .nib .nib-link { color: var(--accent); }
 .nib .nib-image { color: var(--text2); }
 
+.nib .nib-img { display: inline-block; max-width: 100%; height: auto; border-radius: 8px; vertical-align: top; text-indent: 0; }
+.nib .nib-img-missing { color: var(--text3); font-size: 0.88em; }
+
 /* 引用 */
 .nib .cm-line.nib-quote { color: var(--text2); padding-left: 18px; box-shadow: inset 3px 0 0 var(--sep); }
 .nib .cm-line.nib-quote-2 { padding-left: 36px; background: linear-gradient(var(--sep), var(--sep)) 18px 0 / 3px 100% no-repeat; }
@@ -88,6 +91,7 @@ html, body { margin: 0; height: 100%; background: transparent; }
 .nib .nib-table-wrap th, .nib .nib-table-wrap td { padding: 7px 20px 7px 0; text-align: left; vertical-align: top; border-bottom: 1px solid var(--sep); }
 .nib .nib-table-wrap th { font-weight: 600; }
 .nib .nib-table-wrap tr:last-child td { border-bottom: none; }
+.nib .nib-table-wrap .nib-img { max-width: 240px; }
 .nib .nib-table-wrap code { font-family: var(--mono); font-size: 0.9em; background: var(--fill); border-radius: 4px; padding: 0.1em 0.3em; }
 
 /* 源码模式：整篇等宽 */

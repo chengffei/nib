@@ -72,6 +72,53 @@ class CheckboxWidget extends WidgetType {
   }
 }
 
+/** 把 md 里的图片地址换成能加载的地址；本地文件走 nib-file，由外壳读盘。网络图片不加载。 */
+export function resolveImage(src) {
+  const raw = src.trim().replace(/^<|>$/g, '')
+  if (!raw || /^https?:/i.test(raw)) return null
+  if (/^data:image\//i.test(raw)) return raw
+  const base = window.__nibBaseDir
+  try {
+    if (/^file:/i.test(raw)) return 'nib-file://local' + new URL(raw).pathname
+    if (raw.startsWith('/')) return new URL(raw, 'nib-file://local/').href
+    if (!base) return null
+    return new URL(raw, 'nib-file://local' + encodeURI(base).replace(/[?#]/g, encodeURIComponent) + '/').href
+  } catch {
+    return null
+  }
+}
+
+class ImageWidget extends WidgetType {
+  constructor(url, alt) {
+    super()
+    this.url = url
+    this.alt = alt
+  }
+  eq(other) {
+    return other.url === this.url && other.alt === this.alt
+  }
+  toDOM(view) {
+    // 外面包一层：编辑器只认这层根节点，里面的 <img> 才能在加载失败时换成文字
+    const wrap = document.createElement('span')
+    wrap.className = 'nib-img-wrap'
+    const img = document.createElement('img')
+    img.className = 'nib-img'
+    img.alt = this.alt
+    img.decoding = 'async'
+    img.addEventListener('load', () => view.requestMeasure())
+    img.addEventListener('error', () => {
+      const note = document.createElement('span')
+      note.className = 'nib-img-missing'
+      note.textContent = `图片无法显示：${this.alt || decodeURI(this.url.replace(/^nib-file:\/\/local/, ''))}`
+      img.replaceWith(note)
+      view.requestMeasure()
+    })
+    img.src = this.url
+    wrap.appendChild(img)
+    return wrap
+  }
+}
+
 class HrWidget extends WidgetType {
   eq() {
     return true
@@ -199,6 +246,14 @@ function build(view) {
         }
         if (name === 'Image') {
           decos.push(imageMark.range(n.from, n.to))
+          const url = n.node.getChild('URL')
+          const resolved = url && resolveImage(doc.sliceString(url.from, url.to))
+          if (resolved) {
+            const marks = n.node.getChildren('LinkMark')
+            const alt = marks.length > 1 ? doc.sliceString(marks[0].to, marks[1].from) : ''
+            decos.push(Decoration.widget({ widget: new ImageWidget(resolved, alt), side: 1 }).range(n.to))
+            if (!touches(act, n.from, n.to)) hide(n.from, n.to)
+          }
           return false
         }
         if (name === 'Link') {

@@ -17,10 +17,8 @@ targets:
     entitlements:
       path: Nib/Nib.entitlements
       properties:
-        com.apple.security.app-sandbox: true
-        com.apple.security.files.user-selected.read-write: true
-        # 沙盒里的 WKWebView 没有这一项就起不来渲染进程；页面本身用 CSP 禁掉一切网络请求
-        com.apple.security.network.client: true
+        # 11-14 Felix 定：自用不上架，关沙盒，文档旁边的图片才能直接读
+        com.apple.security.app-sandbox: false
     info:
       path: Nib/Info.plist
       properties:

@@ -1,0 +1,43 @@
+/* 菜单 */
+"Undo" = "撤销";
+"Redo" = "重做";
+"Find…" = "查找…";
+"Toggle Editing" = "切换编辑";
+"Toggle Source Mode" = "切换源码模式";
+"Zoom In" = "放大";
+"Zoom Out" = "缩小";
+"Actual Size" = "实际大小";
+"Show Tab %lld" = "显示第 %lld 个标签页";
+"Show Last Tab" = "显示最后一个标签页";
+
+/* 工具栏 */
+"Mode" = "模式";
+"Read" = "阅读";
+"Edit" = "编辑";
+"Source" = "源码";
+
+/* 设置 */
+"Appearance" = "外观";
+"Theme" = "主题";
+"System" = "跟随系统";
+"Light" = "浅色";
+"Dark" = "深色";
+"Paper" = "暖纸";
+"Text" = "正文";
+"Font" = "字体";
+"System Font" = "系统字体";
+"Serif" = "衬线";
+"Size" = "字号";
+"Line height" = "行高";
+"Line width" = "版心宽度";
+"Code" = "代码";
+"System Monospaced" = "系统等宽";
+"Documents" = "文稿";
+"Open documents in" = "打开文稿时";
+"Reading mode" = "阅读模式";
+"Editing mode" = "编辑模式";
+"General" = "通用";
+"Language" = "语言";
+"Follow System" = "跟随系统";
+"Takes effect after you reopen Nib." = "重新打开 Nib 后生效。";
+"Restore Defaults" = "恢复默认";

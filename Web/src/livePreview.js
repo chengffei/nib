@@ -112,7 +112,8 @@ class ImageWidget extends WidgetType {
     img.addEventListener('error', () => {
       const note = document.createElement('span')
       note.className = 'nib-img-missing'
-      note.textContent = `图片无法显示：${this.alt || decodeURI(this.url.replace(/^nib-file:\/\/local/, ''))}`
+      const zh = (window.__nibSettings?.lang || 'en').startsWith('zh')
+      note.textContent = `${zh ? '图片无法显示：' : 'Image unavailable: '}${this.alt || decodeURI(this.url.replace(/^nib-file:\/\/local/, ''))}`
       img.replaceWith(note)
       view.requestMeasure()
     })

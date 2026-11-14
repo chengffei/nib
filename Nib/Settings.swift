@@ -8,7 +8,7 @@ final class AppSettings: ObservableObject {
     enum Theme: String, CaseIterable, Identifiable {
         case system, light, dark, paper
         var id: String { rawValue }
-        var label: String {
+        var label: LocalizedStringKey {
             switch self {
             case .system: "System"
             case .light: "Light"
@@ -31,6 +31,18 @@ final class AppSettings: ObservableObject {
     /// 版心宽度，单位是字号的倍数。
     @Published var contentWidth: Double { didSet { changed("contentWidth", contentWidth) } }
     @Published var openInEdit: Bool { didSet { changed("openInEdit", openInEdit) } }
+    /// "system"、"en" 或 "zh-Hans"。写进 AppleLanguages，系统在下次启动时按它选界面语言。
+    @Published var language: String {
+        didSet {
+            let store = UserDefaults.standard
+            store.set(language, forKey: "language")
+            if language == Self.systemLanguage { store.removeObject(forKey: "AppleLanguages") }
+            else { store.set([language], forKey: "AppleLanguages") }
+        }
+    }
+    static let systemLanguage = "system"
+    /// 这次启动实际用的界面语言。
+    static let currentLanguage = Bundle.main.preferredLocalizations.first ?? "en"
 
     private init() {
         let store = UserDefaults.standard
@@ -41,6 +53,7 @@ final class AppSettings: ObservableObject {
         lineHeight = store.object(forKey: "lineHeight") as? Double ?? 1.6
         contentWidth = store.object(forKey: "contentWidth") as? Double ?? 44
         openInEdit = store.bool(forKey: "openInEdit")
+        language = store.string(forKey: "language") ?? Self.systemLanguage
     }
 
     func restoreDefaults() {
@@ -89,6 +102,7 @@ final class AppSettings: ObservableObject {
             "lineHeight": lineHeight,
             "width": contentWidth,
             "defaultMode": openInEdit ? "edit" : "read",
+            "lang": Self.currentLanguage,
         ]
     }
 
@@ -121,7 +135,7 @@ struct SettingsView: View {
             }
             Section("Text") {
                 Picker("Font", selection: $settings.bodyFont) {
-                    Text("System").tag(AppSettings.systemFont)
+                    Text("System Font").tag(AppSettings.systemFont)
                     Text("Serif").tag(AppSettings.serifFont)
                     Divider()
                     ForEach(Self.families, id: \.self) { Text($0).tag($0) }
@@ -144,6 +158,18 @@ struct SettingsView: View {
                 }
             }
             Section {
+                Picker("Language", selection: $settings.language) {
+                    Text("Follow System").tag(AppSettings.systemLanguage)
+                    Divider()
+                    Text(verbatim: "English").tag("en")
+                    Text(verbatim: "简体中文").tag("zh-Hans")
+                }
+            } header: {
+                Text("General")
+            } footer: {
+                Text("Takes effect after you reopen Nib.").font(.footnote).foregroundStyle(.secondary)
+            }
+            Section {
                 HStack {
                     Spacer()
                     Button("Restore Defaults") { settings.restoreDefaults() }
@@ -155,7 +181,7 @@ struct SettingsView: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
-    private func slider(_ title: String, _ value: Binding<Double>, _ range: ClosedRange<Double>, _ step: Double,
+    private func slider(_ title: LocalizedStringKey, _ value: Binding<Double>, _ range: ClosedRange<Double>, _ step: Double,
                         _ format: @escaping (Double) -> String) -> some View {
         LabeledContent(title) {
             HStack(spacing: 10) {

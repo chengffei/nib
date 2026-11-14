@@ -73,8 +73,12 @@ struct EditorCommands: Commands {
         CommandGroup(before: .windowList) {
             // ⌘1 到 ⌘8 按位置切标签，⌘9 固定去最后一个，和 Safari 一致。
             ForEach(1...9, id: \.self) { number in
-                Button(number == 9 ? "Show Last Tab" : "Show Tab \(number)") { Self.selectTab(number) }
-                    .keyboardShortcut(KeyEquivalent(Character("\(number)")), modifiers: .command)
+                // 两个标题分开写：三目运算会让它们变成普通字符串，不走本地化。
+                Group {
+                    if number == 9 { Button("Show Last Tab") { Self.selectTab(number) } }
+                    else { Button("Show Tab \(number)") { Self.selectTab(number) } }
+                }
+                .keyboardShortcut(KeyEquivalent(Character("\(number)")), modifiers: .command)
             }
             Divider()
         }
@@ -95,7 +99,7 @@ struct EditorCommands: Commands {
         target.makeKeyAndOrderFront(nil)
     }
 
-    private func item(_ title: String, _ script: String, _ key: KeyEquivalent, _ modifiers: EventModifiers = .command) -> some View {
+    private func item(_ title: LocalizedStringKey, _ script: String, _ key: KeyEquivalent, _ modifiers: EventModifiers = .command) -> some View {
         Button(title) { controller?.run(script) }
             .keyboardShortcut(key, modifiers: modifiers)
             .disabled(controller == nil)

@@ -1,64 +1,117 @@
 import SwiftUI
-import AppKit
+import WebKit
 
-/// P0 阶段 1：纯源码编辑器。NSTextView + TextKit 2，后续的语法染色与混合渲染都在这个视图上做。
+enum EditorMode: String, CaseIterable {
+    case read, edit, source
+}
+
+/// 一个文档窗口对应一个：SwiftUI 工具栏和网页里的编辑器靠它互通。
+@MainActor
+final class EditorController: ObservableObject {
+    @Published var mode: EditorMode = .read
+    weak var webView: WKWebView?
+
+    func setMode(_ newMode: EditorMode) {
+        guard newMode != mode else { return }
+        mode = newMode
+        run("nib.setMode('\(newMode.rawValue)')")
+    }
+
+    func run(_ script: String) {
+        NibApp.log("command \(script)")
+        webView?.evaluateJavaScript(script)
+    }
+}
+
+/// 编辑区：WKWebView 里跑 CodeMirror 6（Nib/Editor，由 Web/ 打包）。
+/// 文档真相仍是 `text` 这一个字符串；网页只负责显示和编辑，改动原样传回来。
 struct EditorView: NSViewRepresentable {
     @Binding var text: String
+    let controller: EditorController
 
-    func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSTextView.scrollableTextView()
-        scrollView.hasVerticalScroller = true
-        scrollView.drawsBackground = true
+    func makeCoordinator() -> Coordinator { Coordinator(text: $text, controller: controller) }
 
-        let textView = scrollView.documentView as! NSTextView
-        // TextKit 2：scrollableTextView() 在 macOS 15+ 默认即 TextKit 2；显式确认，避免回落到 TextKit 1。
-        _ = textView.textLayoutManager
-        textView.delegate = context.coordinator
-        textView.isRichText = false
-        textView.allowsUndo = true
-        textView.usesFindBar = true
-        textView.isIncrementalSearchingEnabled = true
-        textView.font = .monospacedSystemFont(ofSize: 14, weight: .regular)
-        textView.textContainerInset = NSSize(width: 24, height: 32)
+    func makeNSView(context: Context) -> WKWebView {
+        let coordinator = context.coordinator
+        let config = WKWebViewConfiguration()
+        config.userContentController.add(coordinator, name: "nib")
+        // 正文在页面脚本运行前就注入，编辑器一创建就有内容，不必等一次往返。
+        let literal = (try? JSONEncoder().encode(text)).flatMap { String(data: $0, encoding: .utf8) } ?? "\"\""
+        let debug = NibApp.debug ? "window.__nibDebug = true;" : ""
+        config.userContentController.addUserScript(
+            WKUserScript(source: "window.__nibInitialText = \(literal);\(debug)", injectionTime: .atDocumentStart, forMainFrameOnly: true))
 
-        // Markdown 语法容不下系统的"智能"替换：引号、破折号、链接、文本替换全部关掉，拼写检查保留。
-        textView.isAutomaticQuoteSubstitutionEnabled = false
-        textView.isAutomaticDashSubstitutionEnabled = false
-        textView.isAutomaticTextReplacementEnabled = false
-        textView.isAutomaticLinkDetectionEnabled = false
-        textView.isAutomaticDataDetectionEnabled = false
-        textView.isAutomaticSpellingCorrectionEnabled = false
-        textView.isContinuousSpellCheckingEnabled = true
+        let webView = EditorWebView(frame: .zero, configuration: config)
+        // 透明底：背景色由 SwiftUI 那层给，深色模式下不会先闪一下白。
+        webView.setValue(false, forKey: "drawsBackground")
+        controller.webView = webView
+        coordinator.lastText = text
 
-        textView.string = text
-        textView.typingAttributes = MarkdownHighlighter.baseAttributes
-        if let storage = textView.textStorage { MarkdownHighlighter.apply(to: storage) }
-        return scrollView
-    }
-
-    func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        guard let textView = scrollView.documentView as? NSTextView else { return }
-        // 只在外部（如 Versions 回滚、磁盘重载）改动时回写，避免每次按键重置光标。
-        if textView.string != text {
-            textView.string = text
-            if let storage = textView.textStorage { MarkdownHighlighter.apply(to: storage) }
+        if let directory = Bundle.main.resourceURL?.appendingPathComponent("Editor") {
+            webView.loadFileURL(directory.appendingPathComponent("index.html"), allowingReadAccessTo: directory)
         }
+        return webView
     }
 
-    func makeCoordinator() -> Coordinator { Coordinator(text: $text) }
+    func updateNSView(_ webView: WKWebView, context: Context) {
+        // 只有外部改动（Versions 回滚、磁盘重载）才推给网页；自己打的字不回推，否则光标会被重置。
+        guard text != context.coordinator.lastText else { return }
+        context.coordinator.push(text)
+    }
 
     @MainActor
-    final class Coordinator: NSObject, NSTextViewDelegate {
+    final class Coordinator: NSObject, WKScriptMessageHandler {
         var text: Binding<String>
-        init(text: Binding<String>) { self.text = text }
+        let controller: EditorController
+        var lastText = ""
+        private var ready = false
 
-        func textDidChange(_ notification: Notification) {
-            guard let textView = notification.object as? NSTextView else { return }
-            text.wrappedValue = textView.string
-            // 中文输入法组字期间（marked text）不重染：改属性会打断候选框定位。提交后会再来一次 textDidChange。
-            guard !textView.hasMarkedText(), let storage = textView.textStorage else { return }
-            MarkdownHighlighter.apply(to: storage)
-            textView.typingAttributes = MarkdownHighlighter.baseAttributes
+        init(text: Binding<String>, controller: EditorController) {
+            self.text = text
+            self.controller = controller
         }
+
+        func push(_ newText: String) {
+            NibApp.log("push external len=\(newText.utf16.count)")
+            lastText = newText
+            guard ready else { return }
+            controller.webView?.callAsyncJavaScript("nib.setText(text)", arguments: ["text": newText], in: nil, in: .page)
+        }
+
+        func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            guard let body = message.body as? [String: Any], let type = body["type"] as? String else { return }
+            switch type {
+            case "change":
+                guard let newText = body["text"] as? String else { return }
+                lastText = newText
+                text.wrappedValue = newText
+            case "mode":
+                if let mode = (body["mode"] as? String).flatMap(EditorMode.init) { controller.mode = mode }
+            case "ready":
+                ready = true
+                if let mode = (body["mode"] as? String).flatMap(EditorMode.init) { controller.mode = mode }
+                // 页面加载期间文档被外部改过：补推一次。
+                if lastText != text.wrappedValue { push(text.wrappedValue) }
+                NibApp.log("ready \(Int(Date().timeIntervalSince(NibApp.launchedAt) * 1000)) ms")
+            case "open":
+                guard let string = body["url"] as? String, let url = URL(string: string),
+                      ["http", "https", "mailto"].contains(url.scheme?.lowercased() ?? "")
+                else { return }
+                NSWorkspace.shared.open(url)
+            case "log":
+                NibApp.log("js \(body["text"] as? String ?? "")")
+            default:
+                break
+            }
+        }
+    }
+}
+
+final class EditorWebView: WKWebView {
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        // 新打开的文档并进现有窗口的标签页，不另开窗口。
+        window?.tabbingMode = .preferred
+        window?.makeFirstResponder(self)
     }
 }

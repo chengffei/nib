@@ -79,10 +79,16 @@ struct EditorCommands: Commands {
     @MainActor
     private static func selectTab(_ number: Int) {
         // 先看 tabbedWindows 再碰 tabGroup，原因见 EditorHost.isSelectedTab。
-        guard let window = NSApp.keyWindow ?? NSApp.mainWindow, let tabs = window.tabbedWindows, !tabs.isEmpty else { return }
+        let candidates = [NSApp.keyWindow, NSApp.mainWindow].compactMap { $0 } + NSApp.orderedWindows
+        guard let window = candidates.first(where: { $0.tabbedWindows != nil }), let tabs = window.tabbedWindows else {
+            NibApp.log("select tab \(number): no tabbed window")
+            return
+        }
         let target = number == 9 ? tabs[tabs.count - 1] : (number <= tabs.count ? tabs[number - 1] : nil)
-        guard let target, target !== window else { return }
+        NibApp.log("select tab \(number) of \(tabs.count)")
+        guard let target else { return }
         window.tabGroup?.selectedWindow = target
+        target.makeKeyAndOrderFront(nil)
     }
 
     private func item(_ title: String, _ script: String, _ key: KeyEquivalent, _ modifiers: EventModifiers = .command) -> some View {

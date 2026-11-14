@@ -141,17 +141,24 @@ function toggleWrap(mark) {
   }
 }
 
-const FONT_KEY = 'nib.fontSize'
-function setFontSize(px) {
-  const size = Math.max(11, Math.min(28, px))
-  document.documentElement.style.setProperty('--fs', `${size}px`)
-  try {
-    localStorage.setItem(FONT_KEY, String(size))
-  } catch {}
-  view?.requestMeasure()
-  return true
+// ---- 偏好设置 ----
+
+let defaultMode = 'read'
+
+/** 外壳的 Settings 窗口改了什么都走这里：只改 CSS 变量和主题标记，不动文档。 */
+function applySettings(s) {
+  const root = document.documentElement
+  const set = (name, value) => (value == null ? root.style.removeProperty(name) : root.style.setProperty(name, String(value)))
+  root.dataset.theme = s.theme || 'system'
+  set('--sans', s.bodyFont)
+  set('--mono', s.monoFont)
+  set('--fs', s.fontSize ? `${s.fontSize}px` : null)
+  set('--lh', s.lineHeight)
+  set('--measure', s.width ? `${s.width}em` : null)
+  defaultMode = s.defaultMode === 'edit' ? 'edit' : 'read'
+  measureMono()
+  if (typeof view !== 'undefined') view.requestMeasure()
 }
-const fontSize = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--fs')) || 16
 
 /** 量出等宽字体的实际字宽，列表悬挂缩进靠它对齐。 */
 function measureMono() {
@@ -272,11 +279,7 @@ function makeState(doc) {
   })
 }
 
-try {
-  const saved = parseFloat(localStorage.getItem(FONT_KEY))
-  if (saved) document.documentElement.style.setProperty('--fs', `${saved}px`)
-} catch {}
-measureMono()
+applySettings(window.__nibSettings || {})
 
 // 先建一个空编辑器：外壳会提前把它预热好，开文档时只需要 load 填内容。
 mode = 'edit'
@@ -288,7 +291,7 @@ const view = new EditorView({ parent: document.body, state: makeState('') })
 function load(text, baseDir, top) {
   window.__nibBaseDir = baseDir || null
   lineBreak = text.includes('\r\n') ? '\r\n' : '\n'
-  mode = text.trim() === '' ? 'edit' : 'read'
+  mode = text.trim() === '' ? 'edit' : defaultMode
   document.body.dataset.mode = mode
   view.setState(makeState(text))
   view.scrollDOM.scrollTop = 0
@@ -374,7 +377,7 @@ window.nib = {
   toggleEdit,
   toggleSource,
   mode: () => mode,
-  zoom: (delta) => setFontSize(delta === 0 ? 16 : fontSize() + delta),
+  applySettings,
   find: () => openSearchPanel(view),
   /** 文档另存或移动后，相对路径的图片要按新目录重新解析。 */
   setBaseDir(dir) {

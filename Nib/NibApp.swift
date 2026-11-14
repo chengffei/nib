@@ -21,6 +21,8 @@ struct NibApp: App {
         UserDefaults.standard.set(false, forKey: "NSQuitAlwaysKeepsWindows")
         // 趁 SwiftUI 还在搭窗口，先把编辑器内核加载起来。
         EditorPool.shared.prewarm()
+        // 主题决定窗口深浅色；NSApp 这时还没建好，等一拍再设。
+        DispatchQueue.main.async { AppSettings.shared.apply() }
     }
 
     var body: some Scene {
@@ -30,6 +32,8 @@ struct NibApp: App {
         }
         .defaultSize(width: 860, height: 900)
         .commands { EditorCommands() }
+
+        Settings { SettingsView() }
     }
 }
 
@@ -61,9 +65,9 @@ struct EditorCommands: Commands {
             item("Toggle Editing", "nib.toggleEdit()", "e")
             item("Toggle Source Mode", "nib.toggleSource()", "/")
             Divider()
-            item("Zoom In", "nib.zoom(1)", "=")
-            item("Zoom Out", "nib.zoom(-1)", "-")
-            item("Actual Size", "nib.zoom(0)", "0")
+            Button("Zoom In") { AppSettings.shared.zoom(1) }.keyboardShortcut("=", modifiers: .command)
+            Button("Zoom Out") { AppSettings.shared.zoom(-1) }.keyboardShortcut("-", modifiers: .command)
+            Button("Actual Size") { AppSettings.shared.zoom(0) }.keyboardShortcut("0", modifiers: .command)
             Divider()
         }
         CommandGroup(before: .windowList) {
@@ -102,10 +106,11 @@ struct DocumentView: View {
     @Binding var text: String
     let fileURL: URL?
     @StateObject private var controller = EditorController()
+    @ObservedObject private var settings = AppSettings.shared
 
     var body: some View {
         EditorView(text: $text, baseDirectory: fileURL?.deletingLastPathComponent().path, controller: controller)
-            .background(Color(nsColor: .textBackgroundColor))
+            .background(settings.backgroundColor)
             .frame(minWidth: 480, minHeight: 320)
             .focusedSceneValue(\.editorController, controller)
             .task(id: fileURL) { controller.watch(fileURL) }

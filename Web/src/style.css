@@ -2,6 +2,8 @@
 :root {
   color-scheme: light dark;
   --fs: 16px;
+  --lh: 1.6;
+  --measure: 44em;
   --mono-w: 0.602em;
   --text: #1d1d1f;
   --text2: #6e6e73;
@@ -37,12 +39,24 @@
   }
 }
 
-html, body { margin: 0; height: 100%; background: transparent; }
+/* 暖纸主题：浅色基础上换一套暖色。窗口外观由外壳固定为浅色。 */
+:root[data-theme="paper"] {
+  --bg: #f8f1e3;
+  --text: #3a3128;
+  --text2: #7b6b59;
+  --text3: #a99a86;
+  --accent: #a4532a;
+  --fill: rgba(96, 64, 24, 0.075);
+  --sep: rgba(96, 64, 24, 0.18);
+  --panel: #efe5d2;
+}
+
+html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
 
 .nib .cm-editor { height: 100vh; font-size: var(--fs); color: var(--text); background: transparent; }
 .nib .cm-editor.cm-focused { outline: none; }
-.nib .cm-scroller { font-family: var(--sans); line-height: 1.6; overflow: auto; -webkit-font-smoothing: antialiased; }
-.nib .cm-content { max-width: 44em; margin: 0 auto; padding: 44px 40px 40vh; caret-color: var(--accent); }
+.nib .cm-scroller { font-family: var(--sans); line-height: var(--lh); overflow: auto; -webkit-font-smoothing: antialiased; }
+.nib .cm-content { max-width: var(--measure); margin: 0 auto; padding: 44px 40px 40vh; caret-color: var(--accent); }
 .nib .cm-line { padding: 0; }
 
 /* 标题：层级只靠字号和字重 */

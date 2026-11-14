@@ -200,6 +200,8 @@ private final class MessageRouter: NSObject, WKScriptMessageHandler {
 }
 
 final class EditorWebView: WKWebView {
+    /// 所有还活着的内核，设置变了要逐个通知。
+    static let all = NSHashTable<EditorWebView>.weakObjects()
     var target: EditorView.Coordinator?
     private var booted = false
     private var queue: [(String, [String: Any])] = []
@@ -209,6 +211,12 @@ final class EditorWebView: WKWebView {
         let router = MessageRouter()
         let config = WKWebViewConfiguration()
         config.userContentController.add(router, name: "nib")
+        // 设置在页面脚本运行前就注入，内核一出来就是对的字体和主题，不会先闪一下默认样式。
+        if let data = try? JSONSerialization.data(withJSONObject: AppSettings.shared.javascriptPayload),
+           let json = String(data: data, encoding: .utf8) {
+            config.userContentController.addUserScript(
+                WKUserScript(source: "window.__nibSettings = \(json);", injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        }
         if NibApp.debug {
             config.userContentController.addUserScript(
                 WKUserScript(source: "window.__nibDebug = true;", injectionTime: .atDocumentStart, forMainFrameOnly: true))
@@ -216,6 +224,7 @@ final class EditorWebView: WKWebView {
         config.setURLSchemeHandler(ImageSchemeHandler(), forURLScheme: "nib-file")
         let webView = EditorWebView(frame: NSRect(x: 0, y: 0, width: 860, height: 900), configuration: config)
         router.view = webView
+        all.add(webView)
         // 透明底：背景色由 SwiftUI 那层给，深色模式下不会先闪一下白。
         webView.setValue(false, forKey: "drawsBackground")
         if let directory = Bundle.main.resourceURL?.appendingPathComponent("Editor") {

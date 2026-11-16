@@ -12,6 +12,10 @@
   --fill: rgba(0, 0, 0, 0.045);
   --sep: rgba(0, 0, 0, 0.12);
   --panel: #f5f5f7;
+  --thumb: rgba(0, 0, 0, 0.32);
+  --thumb-strong: rgba(0, 0, 0, 0.5);
+  --field: #ffffff;
+  --btn: #ffffff;
   --c-keyword: #ad3da4;
   --c-string: #c41a16;
   --c-comment: #707f8c;
@@ -30,6 +34,10 @@
     --fill: rgba(255, 255, 255, 0.07);
     --sep: rgba(255, 255, 255, 0.16);
     --panel: #2c2c2e;
+    --thumb: rgba(255, 255, 255, 0.32);
+    --thumb-strong: rgba(255, 255, 255, 0.5);
+    --field: rgba(255, 255, 255, 0.08);
+    --btn: rgba(255, 255, 255, 0.12);
     --c-keyword: #ff7ab2;
     --c-string: #ff8170;
     --c-comment: #7f8c98;
@@ -49,6 +57,10 @@
   --fill: rgba(96, 64, 24, 0.075);
   --sep: rgba(96, 64, 24, 0.18);
   --panel: #efe5d2;
+  --thumb: rgba(70, 48, 20, 0.3);
+  --thumb-strong: rgba(70, 48, 20, 0.48);
+  --field: #fffaf0;
+  --btn: #fffaf0;
 }
 
 html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
@@ -115,12 +127,61 @@ html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
 .nib[data-mode="read"] .nib-link { cursor: pointer; }
 .nib[data-mode="read"] .nib-task input { pointer-events: none; }
 
-/* 查找条 */
+/* 查找条（findPanel.js）：照 macOS 查找栏，圆角搜索框、箭头、选项开关、「完成」。 */
 .nib .cm-panels { background: var(--panel); color: var(--text); border-color: var(--sep); font: 13px var(--sans); }
-.nib .cm-panel.cm-search { padding: 8px 12px; }
-.nib .cm-panel.cm-search label { font-size: 12px; color: var(--text2); }
-.nib .cm-textfield { border: 1px solid var(--sep); border-radius: 6px; background: transparent; color: var(--text); padding: 3px 7px; font: 13px var(--sans); }
-.nib .cm-button { border: 1px solid var(--sep); border-radius: 6px; background: transparent; background-image: none; color: var(--text); padding: 3px 9px; font: 13px var(--sans); }
-.nib .cm-searchMatch { background: rgba(255, 204, 0, 0.35); }
-.nib .cm-searchMatch-selected { background: rgba(255, 149, 0, 0.55); }
+.nib .cm-panels-top { border-bottom: 0.5px solid var(--sep); }
+.nib .cm-searchMatch { background: rgba(255, 204, 0, 0.35); border-radius: 2px; }
+.nib .cm-searchMatch-selected { background: rgba(255, 204, 0, 0.85); }
 .nib .cm-selectionMatch { background: var(--fill); }
+.nib-find { padding: 7px 10px; display: flex; flex-direction: column; gap: 6px; font: 13px var(--sans); -webkit-user-select: none; }
+.nib-find-row { display: flex; align-items: center; gap: 8px; }
+.nib-find-row[hidden] { display: none; }
+.nib-find-field { flex: 0 1 300px; min-width: 150px; height: 24px; display: flex; align-items: center; gap: 5px; padding: 0 8px;
+  border-radius: 7px; background: var(--field); box-shadow: inset 0 0 0 0.5px var(--sep); cursor: text; }
+.nib-find-field:focus-within { box-shadow: inset 0 0 0 0.5px var(--accent), 0 0 0 3.5px color-mix(in srgb, var(--accent) 30%, transparent); }
+.nib-find-field.nib-find-invalid { box-shadow: inset 0 0 0 1px #ff3b30; }
+.nib-find-glass { display: flex; color: var(--text2); }
+.nib-find-input { flex: 1; min-width: 0; border: 0; outline: 0; padding: 0; background: transparent; color: var(--text); font: 13px var(--sans); }
+.nib-find-input::placeholder { color: var(--text3); }
+.nib-find-count { color: var(--text2); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nib-find-segment { display: inline-flex; align-items: center; gap: 2px; }
+.nib-find-icon, .nib-find-toggle { height: 24px; min-width: 26px; padding: 0 6px; border: 0; border-radius: 6px; background: transparent;
+  color: var(--text2); display: inline-flex; align-items: center; justify-content: center; font: 500 12px var(--mono); }
+.nib-find-icon:hover, .nib-find-toggle:hover { background: var(--fill); color: var(--text); }
+.nib-find-icon:active, .nib-find-toggle:active { background: var(--sep); }
+.nib-find-toggle[aria-pressed="true"] { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.nib-find-spacer { flex: 1; }
+.nib-find-button { height: 22px; padding: 0 11px; border: 0; border-radius: 6px; background: var(--btn); color: var(--text); font: 13px var(--sans);
+  box-shadow: 0 0 0 0.5px var(--sep), 0 0.5px 1px rgba(0, 0, 0, 0.08); white-space: nowrap; }
+.nib-find-button:active { background: var(--fill); }
+.nib-find-replace .nib-find-field { padding-left: 8px; }
+
+/* 滚动条：原生的藏掉，scrollbar.js 画一条仿系统的浮动滚动条。
+   平时 6 点宽，鼠标移上去或拖动时 9 点，滚动停下约 1 秒后淡出。 */
+.nib .cm-scroller { scrollbar-width: none; }
+.nib .cm-scroller::-webkit-scrollbar { display: none; }
+.nib-scrollbar { position: fixed; top: 0; bottom: 0; right: 0; width: 15px; z-index: 20; opacity: 0; transition: opacity 0.4s ease; }
+.nib-scrollbar.visible { opacity: 1; transition-duration: 0.12s; }
+.nib-scrollbar-thumb { position: absolute; top: 0; right: 3px; width: 6px; border-radius: 3px; background: var(--thumb);
+  transition: width 0.15s ease, right 0.15s ease, border-radius 0.15s ease, background-color 0.15s ease; }
+.nib-scrollbar.hover .nib-scrollbar-thumb,
+.nib-scrollbar.dragging .nib-scrollbar-thumb { width: 9px; right: 2px; border-radius: 4.5px; background: var(--thumb-strong); }
+/* 表格横向滚动保留原生行为，只换成细条。 */
+.nib .nib-table-wrap::-webkit-scrollbar { height: 6px; }
+.nib .nib-table-wrap::-webkit-scrollbar-track { background: transparent; }
+.nib .nib-table-wrap::-webkit-scrollbar-thumb { background: var(--thumb); border-radius: 3px; }
+
+/* Typora 主题（readView.js / typoraTheme.js）。阅读层盖满整页，编辑器藏起来。 */
+#nib-typora { position: fixed; inset: 0; overflow-y: auto; scrollbar-width: none; }
+#nib-typora::-webkit-scrollbar { display: none; }
+#nib-typora[hidden], .nib-find[hidden] { display: none; }
+body.typora-reading .cm-editor { display: none !important; }
+.nib-find-floating { position: fixed; top: 0; left: 0; right: 0; z-index: 30; background: var(--panel); color: var(--text); border-bottom: 0.5px solid var(--sep); }
+::highlight(nib-find) { background-color: rgba(255, 204, 0, 0.4); color: inherit; }
+::highlight(nib-find-current) { background-color: rgba(255, 170, 0, 0.9); color: #000; }
+/* 编辑和源码模式借主题的底色、文字色、链接色和字体。 */
+body.nib.typora-active { --bg: var(--t-bg); --text: var(--t-text); --text2: var(--t-text2); --text3: var(--t-text3);
+  --accent: var(--t-accent); --sans: var(--t-sans); --mono: var(--t-mono); background: var(--t-bg); }
+html:has(body.typora-active) { background: var(--t-bg); }
+:root[data-typora-dark="true"] body.typora-active { --fill: rgba(255, 255, 255, 0.07); --sep: rgba(255, 255, 255, 0.16); --panel: rgba(255, 255, 255, 0.06);
+  --thumb: rgba(255, 255, 255, 0.32); --thumb-strong: rgba(255, 255, 255, 0.5); --field: rgba(255, 255, 255, 0.08); --btn: rgba(255, 255, 255, 0.12); }

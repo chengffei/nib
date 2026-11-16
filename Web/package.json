@@ -24,7 +24,8 @@
     "@codemirror/search": "^6",
     "@codemirror/state": "^6",
     "@codemirror/view": "^6",
-    "@lezer/highlight": "^1"
+    "@lezer/highlight": "^1",
+    "markdown-it": "^14.3.3"
   },
   "devDependencies": {
     "esbuild": "^0.25.0"

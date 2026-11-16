@@ -122,6 +122,13 @@ struct EditorView: NSViewRepresentable {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { EditorPool.shared.prewarm() }
             case "open":
                 if let link = body["url"] as? String { open(link) }
+            case "theme":
+                // 主题量出来是深色还是浅色，窗口外观跟着换。
+                if let dark = body["dark"] as? Bool { AppSettings.shared.typoraDark = dark }
+                // 主题底色也报回来：标题栏涂成同一个颜色，顶部和正文连成一片。
+                if let rgb = body["bg"] as? [Double], rgb.count == 3 {
+                    AppSettings.shared.typoraBackground = NSColor(srgbRed: rgb[0] / 255, green: rgb[1] / 255, blue: rgb[2] / 255, alpha: 1)
+                }
             case "log":
                 NibApp.log("js \(body["text"] as? String ?? "")")
             default:
@@ -276,9 +283,7 @@ final class EditorHost: NSView {
     /// 这个标签是不是所在窗口里正显示的那一个。
     var isSelectedTab: Bool {
         guard let window else { return false }
-        // 先看 tabbedWindows：窗口还没并进标签组时去读 tabGroup，系统会给它单独建一个组，之后就不再自动合并标签了。
-        guard window.tabbedWindows != nil, let selected = window.tabGroup?.selectedWindow else { return true }
-        return selected === window
+        return WindowTabs.shared.isSelected(window)
     }
 
     var canHibernate: Bool { webView != nil && !hibernating && coordinator.controller.mode == .read }
@@ -286,7 +291,10 @@ final class EditorHost: NSView {
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         // 新打开的文档并进现有窗口的标签页，不另开窗口。
-        window?.tabbingMode = .preferred
+        if let window {
+            WindowTabs.shared.adopt(window)
+            TabStripInstaller.install(in: window, controller: coordinator.controller)
+        }
         if let webView { window?.makeFirstResponder(webView) }
         EditorHibernator.shared.scheduleEvaluate()
     }
@@ -339,7 +347,7 @@ final class EditorHost: NSView {
     func hibernate() {
         guard canHibernate, let webView else { return }
         hibernating = true
-        webView.evaluateJavaScript("nib.view.scrollDOM.scrollTop") { [weak self] result, _ in
+        webView.evaluateJavaScript("nib.scrollTop()") { [weak self] result, _ in
             MainActor.assumeIsolated {
                 guard let self else { return }
                 let top = (result as? NSNumber)?.doubleValue ?? 0
@@ -424,7 +432,8 @@ final class ImageSchemeHandler: NSObject, WKURLSchemeHandler {
     func webView(_ webView: WKWebView, start task: any WKURLSchemeTask) {
         guard let url = task.request.url else { return }
         let file = URL(fileURLWithPath: url.path)
-        guard let type = UTType(filenameExtension: file.pathExtension), type.conforms(to: .image),
+        // 图片之外再放行字体：Typora 主题会带自己的字体文件。
+        guard let type = UTType(filenameExtension: file.pathExtension), type.conforms(to: .image) || type.conforms(to: .font),
               let data = try? Data(contentsOf: file, options: .mappedIfSafe)
         else {
             // 回一个空的 404 而不是报错：这样网页里 <img> 的 error 事件才会触发，显示「图片无法显示」。

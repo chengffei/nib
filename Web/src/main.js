@@ -6,6 +6,8 @@ import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { HighlightStyle, LanguageDescription, StreamLanguage, ensureSyntaxTree, syntaxHighlighting } from '@codemirror/language'
 import { highlightSelectionMatches, openSearchPanel, search, searchKeymap } from '@codemirror/search'
 import { tags as t } from '@lezer/highlight'
+import { attachScrollbar } from './scrollbar.js'
+import { createFindPanel } from './findPanel.js'
 import { javascript } from '@codemirror/lang-javascript'
 import { python } from '@codemirror/lang-python'
 import { json } from '@codemirror/lang-json'
@@ -19,7 +21,9 @@ import { java } from '@codemirror/lang-java'
 import { cpp } from '@codemirror/lang-cpp'
 import { shell } from '@codemirror/legacy-modes/mode/shell'
 import { swift } from '@codemirror/legacy-modes/mode/swift'
-import { links, livePreview, post, reading } from './livePreview.js'
+import { links, livePreview, post, reading, resolveImage } from './livePreview.js'
+import { createReadView } from './readView.js'
+import { createTyporaTheme } from './typoraTheme.js'
 import { tables } from './table.js'
 
 const lang = (name, alias, support) => LanguageDescription.of({ name, alias, support })
@@ -157,6 +161,9 @@ function applySettings(s) {
   set('--measure', s.width ? `${s.width}em` : null)
   defaultMode = s.defaultMode === 'edit' ? 'edit' : 'read'
   measureMono()
+  // Typora 主题自己定字号；Nib 的字号设置在阅读模式里按比例缩放整页。
+  reader.scroller.style.zoom = s.fontSize ? String(s.fontSize / 16) : ''
+  if (typora.setCSS(s.typoraCSS)) syncReader()
   if (typeof view !== 'undefined') view.requestMeasure()
 }
 
@@ -184,6 +191,7 @@ function setMode(next) {
   mode = next
   document.body.dataset.mode = mode
   view.dispatch({ effects: [previewPart.reconfigure(previewFor(mode)), readPart.reconfigure(readFor(mode))] })
+  syncReader()
   if (mode !== 'read') view.focus()
   post({ type: 'mode', mode })
   return true
@@ -244,6 +252,9 @@ const zhPhrases = {
   replace: '替换',
   'replace all': '全部替换',
   close: '关闭',
+  Done: '完成',
+  'No results': '无结果',
+  '$1 of $2': '$1/$2',
   'current match': '当前匹配',
   'on line': '在第',
   'replaced $ matches': '已替换 $ 处',
@@ -261,7 +272,7 @@ function makeState(doc) {
       EditorState.tabSize.of(4),
       markdown({ base: markdownLanguage, codeLanguages, extensions: [frontmatter] }),
       syntaxHighlighting(highlight),
-      search({ top: true }),
+      search({ top: true, createPanel: createFindPanel }),
       highlightSelectionMatches(),
       previewPart.of(previewFor(mode)),
       readPart.of(readFor(mode)),
@@ -300,12 +311,46 @@ function makeState(doc) {
   })
 }
 
+// 选了 Typora 主题时，阅读模式换成 readView 渲染的 HTML，主题才能原样生效；编辑和源码模式照旧用 CodeMirror。
+let reader = createReadView({ codeLanguages, resolveImage, openLink: (href) => links.open(href), attachScrollbar })
+let typora = createTyporaTheme({ post })
+
+/** 当前正在显示、能滚动的那一层。 */
+const activeScroller = () => (reader.visible ? reader.scroller : view.scrollDOM)
+
+/** 按模式和主题决定阅读模式用哪一层；换层时按比例带过滚动位置。 */
+function syncReader() {
+  if (typeof view === 'undefined') return
+  const want = mode === 'read' && typora.active
+  if (want === reader.visible) {
+    if (want) reader.render(currentText())
+    return
+  }
+  const from = activeScroller()
+  const ratio = from.scrollHeight > from.clientHeight ? from.scrollTop / (from.scrollHeight - from.clientHeight) : 0
+  if (want) {
+    reader.render(currentText())
+    typora.setReading(true)
+    document.body.classList.add('typora-reading')
+    reader.show()
+  } else {
+    reader.hide()
+    typora.setReading(false)
+    document.body.classList.remove('typora-reading')
+  }
+  const to = activeScroller()
+  requestAnimationFrame(() => {
+    to.scrollTop = ratio * (to.scrollHeight - to.clientHeight)
+  })
+}
+
 applySettings(window.__nibSettings || {})
 
 // 先建一个空编辑器：外壳会提前把它预热好，开文档时只需要 load 填内容。
 mode = 'edit'
 document.body.dataset.mode = mode
 const view = new EditorView({ parent: document.body, state: makeState('') })
+attachScrollbar(view.scrollDOM)
 
 /** 装入一篇文档：全新的状态（撤销历史清空），有内容进阅读，空文档进编辑。
  *  top 是从休眠回来时要恢复的滚动位置。 */
@@ -316,6 +361,9 @@ function load(text, baseDir, top) {
   document.body.dataset.mode = mode
   view.setState(makeState(text))
   view.scrollDOM.scrollTop = 0
+  reader.invalidate()
+  syncReader()
+  activeScroller().scrollTop = 0
   if (mode !== 'read') view.focus()
   if (!(top > 0)) {
     post({ type: 'ready', mode })
@@ -323,7 +371,7 @@ function load(text, baseDir, top) {
   }
   // 行高要等排版量过才准，隔两帧各设一次，再报就绪
   const restore = () => {
-    view.scrollDOM.scrollTop = top
+    activeScroller().scrollTop = top
   }
   restore()
   requestAnimationFrame(() => {
@@ -339,7 +387,7 @@ function load(text, baseDir, top) {
 window.addEventListener('keydown', (event) => {
   if (mode !== 'read' || event.ctrlKey || event.altKey) return
   if (event.target.closest?.('input, textarea, button')) return
-  const scroller = view.scrollDOM
+  const scroller = activeScroller()
   const page = scroller.clientHeight * 0.9
   let top = null
   let smooth = true
@@ -390,6 +438,13 @@ window.nib = {
     }
     restore()
     requestAnimationFrame(restore)
+    // Typora 阅读层也跟着换内容，保持原来的滚动位置。
+    reader.invalidate()
+    if (reader.visible) {
+      const readTop = reader.scroller.scrollTop
+      reader.render(currentText())
+      reader.scroller.scrollTop = readTop
+    }
   },
   getText: currentText,
   undo: () => undo(view),
@@ -399,7 +454,9 @@ window.nib = {
   toggleSource,
   mode: () => mode,
   applySettings,
-  find: () => openSearchPanel(view),
+  find: () => (reader.visible ? reader.find() : openSearchPanel(view)),
+  /** 外壳休眠标签前要记滚动位置；阅读层和编辑器各有各的滚动。 */
+  scrollTop: () => activeScroller().scrollTop,
   /** 文档另存或移动后，相对路径的图片要按新目录重新解析。 */
   setBaseDir(dir) {
     window.__nibBaseDir = dir

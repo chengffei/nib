@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct NibApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     static let launchedAt = Date()
     static let debug = ProcessInfo.processInfo.environment["NIB_DEBUG"] != nil
     @MainActor static var evalOnce = debug ? ProcessInfo.processInfo.environment["NIB_EVAL"] : nil
@@ -15,10 +16,12 @@ struct NibApp: App {
     init() {
         _ = Self.launchedAt
         Self.log("app init")
-        // 只对 Nib 生效：打开文稿时总是合并成标签页，不受系统「偏好标签页」设置影响。
-        UserDefaults.standard.set("always", forKey: "AppleWindowTabbingMode")
-        // 启动时不恢复上次的窗口：点开一篇就只加载这一篇。
-        UserDefaults.standard.set(false, forKey: "NSQuitAlwaysKeepsWindows")
+        // 标签由 WindowTabs 自己管，系统标签组关掉；清掉以前写的「总是合并成标签页」。
+        UserDefaults.standard.removeObject(forKey: "AppleWindowTabbingMode")
+        // 最近打开、启动时恢复窗口都按设置来（默认记最近打开、不恢复窗口）。
+        // 这时还不能碰 NSDocumentController：SwiftUI 要自己先建它，抢先建了启动就崩（11-16 关掉最近打开后每次启动都崩）。
+        // 最近打开的清理放到启动完成之后（AppDelegate）。
+        AppSettings.applyHistory(touchRecents: false)
         // 趁 SwiftUI 还在搭窗口，先把编辑器内核加载起来。
         EditorPool.shared.prewarm()
         // 主题决定窗口深浅色；NSApp 这时还没建好，等一拍再设。
@@ -31,26 +34,27 @@ struct NibApp: App {
             DocumentView(text: file.$document.text, fileURL: file.fileURL)
         }
         .defaultSize(width: 860, height: 900)
+        // 不显示窗口标题，工具栏压成紧凑高度；文件名看标签页。
+        .windowToolbarStyle(.unifiedCompact(showsTitle: false))
         .commands { EditorCommands() }
 
         Settings { SettingsView() }
     }
 }
 
-struct EditorControllerKey: FocusedValueKey {
-    typealias Value = EditorController
-}
+/// 最后一个文档窗口关掉就退出，不留空跑的 app。
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 
-extension FocusedValues {
-    var editorController: EditorController? {
-        get { self[EditorControllerKey.self] }
-        set { self[EditorControllerKey.self] = newValue }
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        AppSettings.applyHistory()
     }
 }
 
 /// 菜单命令发给当前窗口的编辑器。撤销重做不用 SwiftUI 自带的：那套走文档的 UndoManager，管不到网页里的编辑历史。
 struct EditorCommands: Commands {
-    @FocusedValue(\.editorController) private var controller
+    // FocusedObject 会跟着 controller 的 mode 变化刷新菜单，勾选状态才对。
+    @FocusedObject private var controller: EditorController?
 
     var body: some Commands {
         CommandGroup(replacing: .undoRedo) {
@@ -62,8 +66,12 @@ struct EditorCommands: Commands {
             item("Find…", "nib.find()", "f")
         }
         CommandGroup(before: .toolbar) {
-            item("Toggle Editing", "nib.toggleEdit()", "e")
-            item("Toggle Source Mode", "nib.toggleSource()", "/")
+            // 三种模式做成带勾的菜单项，当前模式打勾（HIG：有状态的命令显示状态，不用「切换」这种说不清方向的名字）。
+            modeItem("Read", .read) { controller?.setMode(.read) }
+            modeItem("Editing", .edit) { controller?.run("nib.toggleEdit()") }
+                .keyboardShortcut("e", modifiers: .command)
+            modeItem("Source Mode", .source) { controller?.run("nib.toggleSource()") }
+                .keyboardShortcut("/", modifiers: .command)
             Divider()
             Button("Zoom In") { AppSettings.shared.zoom(1) }.keyboardShortcut("=", modifiers: .command)
             Button("Zoom Out") { AppSettings.shared.zoom(-1) }.keyboardShortcut("-", modifiers: .command)
@@ -71,14 +79,20 @@ struct EditorCommands: Commands {
             Divider()
         }
         CommandGroup(before: .windowList) {
-            // ⌘1 到 ⌘8 按位置切标签，⌘9 固定去最后一个，和 Safari 一致。
-            ForEach(1...9, id: \.self) { number in
-                // 两个标题分开写：三目运算会让它们变成普通字符串，不走本地化。
-                Group {
-                    if number == 9 { Button("Show Last Tab") { Self.selectTab(number) } }
-                    else { Button("Show Tab \(number)") { Self.selectTab(number) } }
+            // 和 Safari 一样：前后切换放在窗口菜单里（⇧⌘[ ]；⌃⇥ 会被网页视图当成焦点切换吃掉，实测不触发），⌘1 到 ⌘9 收进子菜单，不把窗口菜单撑长。
+            Button("Show Previous Tab") { WindowTabs.shared.selectAdjacent(-1) }
+                .keyboardShortcut("[", modifiers: [.command, .shift])
+            Button("Show Next Tab") { WindowTabs.shared.selectAdjacent(1) }
+                .keyboardShortcut("]", modifiers: [.command, .shift])
+            Menu("Go to Tab") {
+                // ⌘1 到 ⌘8 按位置切标签，⌘9 固定去最后一个。两个标题分开写：三目运算会让它们变成普通字符串，不走本地化。
+                ForEach(1...9, id: \.self) { number in
+                    Group {
+                        if number == 9 { Button("Show Last Tab") { Self.selectTab(number) } }
+                        else { Button("Show Tab \(number)") { Self.selectTab(number) } }
+                    }
+                    .keyboardShortcut(KeyEquivalent(Character("\(number)")), modifiers: .command)
                 }
-                .keyboardShortcut(KeyEquivalent(Character("\(number)")), modifiers: .command)
             }
             Divider()
         }
@@ -86,17 +100,12 @@ struct EditorCommands: Commands {
 
     @MainActor
     private static func selectTab(_ number: Int) {
-        // 先看 tabbedWindows 再碰 tabGroup，原因见 EditorHost.isSelectedTab。
-        let candidates = [NSApp.keyWindow, NSApp.mainWindow].compactMap { $0 } + NSApp.orderedWindows
-        guard let window = candidates.first(where: { $0.tabbedWindows != nil }), let tabs = window.tabbedWindows else {
-            NibApp.log("select tab \(number): no tabbed window")
-            return
-        }
-        let target = number == 9 ? tabs[tabs.count - 1] : (number <= tabs.count ? tabs[number - 1] : nil)
-        NibApp.log("select tab \(number) of \(tabs.count)")
-        guard let target else { return }
-        window.tabGroup?.selectedWindow = target
-        target.makeKeyAndOrderFront(nil)
+        WindowTabs.shared.select(number: number)
+    }
+
+    private func modeItem(_ title: LocalizedStringKey, _ mode: EditorMode, action: @escaping () -> Void) -> some View {
+        Toggle(title, isOn: Binding(get: { controller?.mode == mode }, set: { _ in action() }))
+            .disabled(controller == nil)
     }
 
     private func item(_ title: LocalizedStringKey, _ script: String, _ key: KeyEquivalent, _ modifiers: EventModifiers = .command) -> some View {
@@ -116,18 +125,15 @@ struct DocumentView: View {
         EditorView(text: $text, baseDirectory: fileURL?.deletingLastPathComponent().path, controller: controller)
             .background(settings.backgroundColor)
             .frame(minWidth: 480, minHeight: 320)
-            .focusedSceneValue(\.editorController, controller)
+            .focusedSceneObject(controller)
             .task(id: fileURL) { controller.watch(fileURL) }
+            .toolbar(removing: .title)
+            // 工具栏不画自己的底色，露出窗口底色（= 正文底色，见 AppSettings.applyChrome），顶部和正文一个颜色。
+            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Picker("Mode", selection: Binding(get: { controller.mode }, set: { controller.setMode($0) })) {
-                        Image(systemName: "book").help("Read").tag(EditorMode.read)
-                        Image(systemName: "square.and.pencil").help("Edit").tag(EditorMode.edit)
-                        Image(systemName: "chevron.left.forwardslash.chevron.right").help("Source").tag(EditorMode.source)
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                }
+                // 工具栏里只放一个看不见的占位，撑出标题栏高度；标签条和模式切换都挂在标题栏上（见 TabStripInstaller），
+                // 放在工具栏里窗口一窄就会被收进「»」。
+                ToolbarItem(placement: .principal) { Color.clear.frame(width: 1, height: 1) }
             }
     }
 }

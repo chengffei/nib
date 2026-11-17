@@ -133,7 +133,13 @@ struct DocumentView: View {
             .toolbar {
                 // 工具栏里只放一个看不见的占位，撑出标题栏高度；标签条和模式切换都挂在标题栏上（见 TabStripInstaller），
                 // 放在工具栏里窗口一窄就会被收进「»」。
-                ToolbarItem(placement: .principal) { Color.clear.frame(width: 1, height: 1) }
+                // 占位项不能带系统给工具栏项加的玻璃底，不然窗口正中会多出一道竖线（11-17 Felix 反馈）。
+                if #available(macOS 26, *) {
+                    ToolbarItem(placement: .principal) { Color.clear.frame(width: 1, height: 1) }
+                        .sharedBackgroundVisibility(.hidden)
+                } else {
+                    ToolbarItem(placement: .principal) { Color.clear.frame(width: 1, height: 1) }
+                }
             }
     }
 }

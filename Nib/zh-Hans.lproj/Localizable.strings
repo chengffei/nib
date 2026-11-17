@@ -57,3 +57,5 @@
 "None" = "不使用";
 "Open Themes Folder" = "打开主题文件夹";
 "The theme styles Reading mode in full; Editing and Source modes take its background, colours and fonts. Themes installed in Typora are listed automatically; to add one, put its .css file and folder in the themes folder." = "主题完整作用于阅读模式；编辑和源码模式沿用它的底色、颜色和字体。已装在 Typora 里的主题会自动列出；要加新主题，把 .css 文件和同名文件夹放进主题文件夹。";
+"Typora themes are listed too." = "Typora 主题也会列在这里。";
+"Themes Folder…" = "主题文件夹…";

@@ -231,32 +231,34 @@ struct SettingsView: View {
     /// 设置窗口每次打开时重新列一遍，刚放进文件夹的主题不用重开 Nib。
     @State private var themes = TyporaThemes.all()
 
+    /// 主题只有一个选择：Nib 自带的四种和 Typora 主题放在同一个菜单里。选 Typora 主题时 Nib 主题不再起作用，分成两项反而让人困惑。
+    private var themeChoice: Binding<String> {
+        Binding(
+            get: { settings.typoraTheme.isEmpty ? "nib:" + settings.theme.rawValue : settings.typoraTheme },
+            set: { value in
+                if value.hasPrefix("nib:") {
+                    settings.typoraTheme = ""
+                    settings.theme = AppSettings.Theme(rawValue: String(value.dropFirst(4))) ?? .system
+                } else {
+                    settings.typoraTheme = value
+                }
+            }
+        )
+    }
+
+    // 只留会改的几项（11-16 Felix 觉得原来那页复杂无用）：行高、版心、代码字体用默认就好；
+    // 界面语言交给系统设置里的「App 语言」；项目少到不需要「恢复默认」。
     var body: some View {
         Form {
-            Section("Appearance") {
-                Picker("Theme", selection: $settings.theme) {
-                    ForEach(AppSettings.Theme.allCases) { Text($0.label).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .disabled(!settings.typoraTheme.isEmpty)
-            }
             Section {
-                Picker("Theme", selection: $settings.typoraTheme) {
-                    Text("None").tag("")
-                    Divider()
-                    ForEach(themes) { Text(verbatim: $0.name).tag($0.id) }
+                Picker("Theme", selection: themeChoice) {
+                    ForEach(AppSettings.Theme.allCases) { Text($0.label).tag("nib:" + $0.rawValue) }
+                    if !themes.isEmpty {
+                        Section("Typora") {
+                            ForEach(themes) { Text(verbatim: $0.name).tag($0.id) }
+                        }
+                    }
                 }
-                HStack {
-                    Spacer()
-                    Button("Open Themes Folder") { TyporaThemes.openFolder() }
-                }
-            } header: {
-                Text("Typora Theme")
-            } footer: {
-                Text("The theme styles Reading mode in full; Editing and Source modes take its background, colours and fonts. Themes installed in Typora are listed automatically; to add one, put its .css file and folder in the themes folder.")
-                    .font(.footnote).foregroundStyle(.secondary)
-            }
-            Section("Text") {
                 Picker("Font", selection: $settings.bodyFont) {
                     Text("System Font").tag(AppSettings.systemFont)
                     Text("Serif").tag(AppSettings.serifFont)
@@ -264,48 +266,21 @@ struct SettingsView: View {
                     ForEach(Self.families, id: \.self) { Text($0).tag($0) }
                 }
                 slider("Size", $settings.fontSize, AppSettings.fontSizeRange, 1) { "\(Int($0)) pt" }
-                slider("Line height", $settings.lineHeight, 1.3...2.0, 0.05) { String(format: "%.2f", $0) }
-                slider("Line width", $settings.contentWidth, 32...72, 2) { "\(Int($0)) em" }
-            }
-            Section("Code") {
-                Picker("Font", selection: $settings.monoFont) {
-                    Text("System Monospaced").tag(AppSettings.systemFont)
-                    Divider()
-                    ForEach(Self.monoFamilies, id: \.self) { Text($0).tag($0) }
+            } footer: {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Typora themes are listed too.").foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Themes Folder…") { TyporaThemes.openFolder() }.buttonStyle(.link)
                 }
+                .font(.footnote)
             }
-            Section("Documents") {
+            Section {
                 Picker("Open documents in", selection: $settings.openInEdit) {
                     Text("Reading mode").tag(false)
                     Text("Editing mode").tag(true)
                 }
-            }
-            Section {
                 Toggle("Remember recent documents", isOn: $settings.rememberRecents)
                 Toggle("Reopen windows when Nib starts", isOn: $settings.restoreWindows)
-            } header: {
-                Text("History")
-            } footer: {
-                Text("Turning off recent documents also clears the existing list.").font(.footnote).foregroundStyle(.secondary)
-            }
-            Section {
-                Picker("Language", selection: $settings.language) {
-                    Text("Follow System").tag(AppSettings.systemLanguage)
-                    Divider()
-                    Text(verbatim: "English").tag("en")
-                    Text(verbatim: "简体中文").tag("zh-Hans")
-                }
-            } header: {
-                Text("General")
-            } footer: {
-                Text("Takes effect after you reopen Nib.").font(.footnote).foregroundStyle(.secondary)
-            }
-            // 恢复默认是整页的操作，放在表单末尾右下角，不单独占一张卡片。
-            Section {} footer: {
-                HStack {
-                    Spacer()
-                    Button("Restore Defaults") { settings.restoreDefaults() }
-                }
             }
         }
         .formStyle(.grouped)

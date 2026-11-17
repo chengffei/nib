@@ -158,7 +158,6 @@ function applySettings(s) {
   set('--mono', s.monoFont)
   set('--fs', s.fontSize ? `${s.fontSize}px` : null)
   set('--lh', s.lineHeight)
-  set('--measure', s.width ? `${s.width}em` : null)
   defaultMode = s.defaultMode === 'edit' ? 'edit' : 'read'
   measureMono()
   // Typora 主题自己定字号；Nib 的字号设置在阅读模式里按比例缩放整页。

@@ -3,7 +3,8 @@
   color-scheme: light dark;
   --fs: 16px;
   --lh: 1.6;
-  --measure: 44em;
+  /* 版心跟窗口走：左右留白随窗口宽度在 40-140px 之间伸缩，正文占满其余宽度。 */
+  --gutter: clamp(40px, 7vw, 140px);
   --mono-w: 0.602em;
   --text: #1d1d1f;
   --text2: #6e6e73;
@@ -68,7 +69,7 @@ html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
 .nib .cm-editor { height: 100vh; font-size: var(--fs); color: var(--text); background: transparent; }
 .nib .cm-editor.cm-focused { outline: none; }
 .nib .cm-scroller { font-family: var(--sans); line-height: var(--lh); overflow: auto; -webkit-font-smoothing: antialiased; }
-.nib .cm-content { max-width: var(--measure); margin: 0 auto; padding: 44px 40px 40vh; caret-color: var(--accent); }
+.nib .cm-content { margin: 0 auto; padding: 44px var(--gutter) 40vh; caret-color: var(--accent); }
 .nib .cm-line { padding: 0; }
 
 /* 标题：层级只靠字号和字重 */
@@ -174,6 +175,8 @@ html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
 /* Typora 主题（readView.js / typoraTheme.js）。阅读层盖满整页，编辑器藏起来。 */
 #nib-typora { position: fixed; inset: 0; overflow-y: auto; scrollbar-width: none; }
 #nib-typora::-webkit-scrollbar { display: none; }
+/* Typora 主题自带固定版心（多为 860px 加断点），这里统一改成跟窗口走。 */
+#nib-typora #write { max-width: none !important; padding-left: var(--gutter) !important; padding-right: var(--gutter) !important; }
 #nib-typora[hidden], .nib-find[hidden] { display: none; }
 body.typora-reading .cm-editor { display: none !important; }
 .nib-find-floating { position: fixed; top: 0; left: 0; right: 0; z-index: 30; background: var(--panel); color: var(--text); border-bottom: 0.5px solid var(--sep); }

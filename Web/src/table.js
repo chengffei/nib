@@ -3,6 +3,7 @@ import { Decoration, EditorView, WidgetType, keymap } from '@codemirror/view'
 import { Prec, StateField } from '@codemirror/state'
 import { syntaxTree } from '@codemirror/language'
 import { activeRanges, links, reading, resolveImage, touches } from './livePreview.js'
+import { keepShortColumns } from './tableColumns.js'
 
 function splitRow(line) {
   let s = line.trim()
@@ -73,6 +74,7 @@ class TableWidget extends WidgetType {
       })
       table.appendChild(tr)
     })
+    keepShortColumns(table)
     wrap.appendChild(table)
     wrap.addEventListener('mousedown', (event) => {
       const isReading = view.state.facet(reading)

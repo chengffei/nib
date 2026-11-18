@@ -2,6 +2,7 @@
 // figure.table-figure……），主题 CSS 才能原样生效。编辑和源码模式仍走 CodeMirror。
 
 import MarkdownIt from 'markdown-it'
+import { keepShortColumns } from './tableColumns.js'
 import { highlightCode, tagHighlighter, tags as t } from '@lezer/highlight'
 
 // 代码块按 Typora（CodeMirror 5）的类名上色，主题里写的 .cm-s-inner .cm-keyword 之类才认得。
@@ -132,6 +133,7 @@ export function createReadView({ codeLanguages, resolveImage, openLink, attachSc
     }
     for (const table of write.querySelectorAll('table')) {
       table.classList.add('md-table')
+      keepShortColumns(table)
       const figure = document.createElement('figure')
       figure.className = 'table-figure'
       table.replaceWith(figure)

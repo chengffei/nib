@@ -24,6 +24,8 @@ import { swift } from '@codemirror/legacy-modes/mode/swift'
 import { links, livePreview, post, reading, resolveImage } from './livePreview.js'
 import { createReadView } from './readView.js'
 import { createTyporaTheme } from './typoraTheme.js'
+import { createWordCounter } from './wordCount.js'
+import { createOutline } from './outline.js'
 import { tables } from './table.js'
 
 const lang = (name, alias, support) => LanguageDescription.of({ name, alias, support })
@@ -71,12 +73,13 @@ const frontmatter = {
   ],
 }
 
+// 粗体、斜体、删除线只给类名（带 class 的条目样式属性不生效），样式写在 style.css，套 Typora 主题时 typoraEdit.js 覆盖。
 const highlight = HighlightStyle.define([
   { tag: t.processingInstruction, color: 'var(--text3)' },
   { tag: [t.labelName, t.url], color: 'var(--text2)' },
-  { tag: t.emphasis, fontStyle: 'italic' },
-  { tag: t.strong, fontWeight: '600' },
-  { tag: t.strikethrough, textDecoration: 'line-through', color: 'var(--text2)' },
+  { tag: t.emphasis, class: 'nib-em' },
+  { tag: t.strong, class: 'nib-strong' },
+  { tag: t.strikethrough, class: 'nib-del' },
   { tag: [t.keyword, t.operatorKeyword, t.modifier, t.controlKeyword, t.definitionKeyword], color: 'var(--c-keyword)' },
   { tag: [t.string, t.special(t.string), t.regexp], color: 'var(--c-string)' },
   { tag: [t.comment, t.lineComment, t.blockComment], color: 'var(--c-comment)' },
@@ -193,6 +196,7 @@ function setMode(next) {
   syncReader()
   if (mode !== 'read') view.focus()
   post({ type: 'mode', mode })
+  requestAnimationFrame(() => outline.track())
   return true
 }
 const toggleEdit = () => setMode(mode === 'read' ? 'edit' : 'read')
@@ -302,6 +306,8 @@ function makeState(doc) {
             if (tr.docChanged) post({ type: 'log', text: `tr ${tr.annotation(external) ? 'external' : 'user'} len=${tr.newDoc.length}` })
           }
         }
+        if (update.docChanged || update.selectionSet) wordCounter.schedule()
+        if (update.docChanged) outline.schedule()
         if (!update.docChanged) return
         if (update.transactions.some((tr) => tr.annotation(external))) return
         scheduleFlush()
@@ -313,6 +319,33 @@ function makeState(doc) {
 // 选了 Typora 主题时，阅读模式换成 readView 渲染的 HTML，主题才能原样生效；编辑和源码模式照旧用 CodeMirror。
 let reader = createReadView({ codeLanguages, resolveImage, openLink: (href) => links.open(href), attachScrollbar })
 let typora = createTyporaTheme({ post })
+// 字数统计：选了文字时另报选中部分。阅读层是普通网页，选区从 DOM 取。
+const wordCounter = createWordCounter({
+  post,
+  getText: () => currentText(),
+  getSelection: () => {
+    if (reader.visible) return window.getSelection()?.toString() || ''
+    const { state } = view
+    return state.selection.ranges.filter((r) => !r.empty).map((r) => state.sliceDoc(r.from, r.to)).join('\n')
+  },
+})
+// 大纲：标题列表和当前读到的一节报给外壳。
+const outline = createOutline({ post, getView: () => view, reader })
+let trackFrame = 0
+document.addEventListener(
+  'scroll',
+  () => {
+    if (trackFrame) return
+    trackFrame = requestAnimationFrame(() => {
+      trackFrame = 0
+      outline.track()
+    })
+  },
+  true,
+)
+document.addEventListener('selectionchange', () => {
+  if (reader.visible) wordCounter.schedule()
+})
 
 /** 当前正在显示、能滚动的那一层。 */
 const activeScroller = () => (reader.visible ? reader.scroller : view.scrollDOM)
@@ -364,6 +397,8 @@ function load(text, baseDir, top) {
   syncReader()
   activeScroller().scrollTop = 0
   if (mode !== 'read') view.focus()
+  wordCounter.reset()
+  outline.reset()
   if (!(top > 0)) {
     post({ type: 'ready', mode })
     return
@@ -446,6 +481,8 @@ window.nib = {
     }
   },
   getText: currentText,
+  /** 大纲面板里点了第 index 个标题。 */
+  gotoHeading: (index) => outline.go(index),
   undo: () => undo(view),
   redo: () => redo(view),
   setMode,

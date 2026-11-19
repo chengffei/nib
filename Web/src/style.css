@@ -81,6 +81,9 @@ html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
 .nib .cm-line.nib-h6 { color: var(--text2); }
 
 /* 行内 */
+.nib .nib-strong { font-weight: 600; }
+.nib .nib-em { font-style: italic; }
+.nib .nib-del { text-decoration: line-through; color: var(--text2); }
 .nib .nib-code { font-family: var(--mono); font-size: 0.88em; background: var(--fill); border-radius: 5px; padding: 0.12em 0.36em; }
 .nib .nib-link { color: var(--accent); }
 .nib .nib-image { color: var(--text2); }

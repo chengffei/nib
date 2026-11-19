@@ -10,6 +10,15 @@ enum EditorMode: String, CaseIterable {
 @MainActor
 final class EditorController: ObservableObject {
     @Published var mode: EditorMode = .read
+    /// 全文字数统计和选中部分的统计（没选中为 nil），网页算好报上来。
+    @Published var stats = TextStats()
+    @Published var selectionStats: TextStats?
+    /// 大纲：标题列表、当前读到第几个（没有为 -1）。
+    @Published var outline: [OutlineItem] = []
+    @Published var outlineCurrent = -1
+    /// 标题栏两个面板开没开（开着时标题栏工具不隐藏）。
+    @Published var showOutline = false
+    @Published var showWordCount = false
     weak var webView: EditorWebView?
     private var watcher: FileWatcher?
     private var watchedURL: URL?
@@ -129,6 +138,16 @@ struct EditorView: NSViewRepresentable {
                 if let rgb = body["bg"] as? [Double], rgb.count == 3 {
                     AppSettings.shared.typoraBackground = NSColor(srgbRed: rgb[0] / 255, green: rgb[1] / 255, blue: rgb[2] / 255, alpha: 1)
                 }
+            case "outline":
+                let items = body["items"] as? [[String: Any]] ?? []
+                controller.outline = items.enumerated().map { index, item in
+                    OutlineItem(index: index, level: item["level"] as? Int ?? 1, text: item["text"] as? String ?? "")
+                }
+            case "outlineCurrent":
+                controller.outlineCurrent = body["index"] as? Int ?? -1
+            case "stats":
+                controller.stats = TextStats(body)
+                controller.selectionStats = (body["selection"] as? [String: Any]).map(TextStats.init)
             case "log":
                 NibApp.log("js \(body["text"] as? String ?? "")")
             default:

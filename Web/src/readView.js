@@ -76,6 +76,8 @@ export function createReadView({ codeLanguages, resolveImage, openLink, attachSc
     return `<pre class="md-fences md-end-block ty-contain-cm modeLoaded" spellcheck="false" lang="${lang}"><div class="CodeMirror cm-s-inner cm-s-null-scroll CodeMirror-wrap" lang="${lang}"><div class="CodeMirror-scroll"><div class="CodeMirror-sizer"><div class="CodeMirror-lines" role="presentation"><div role="presentation" class="CodeMirror-code">${body}</div></div></div></div></div></pre>\n`
   }
   md.renderer.rules.code_block = (tokens, idx) => md.renderer.rules.fence(tokens, idx)
+  // 段落是 pre-wrap（照 Typora），markdown-it 在 <br> 后面还跟一个换行符，硬换行就成了两行。
+  md.renderer.rules.hardbreak = () => '<br>'
 
   const scroller = document.createElement('div')
   scroller.id = 'nib-typora'

@@ -14,7 +14,13 @@ final class WindowTabs {
     }
 
     private var groups: [Group] = []
+    /// 正在改名的文档窗口（标签条显示输入框）。
+    weak var renaming: NSWindow? { didSet { if oldValue !== renaming { post() } } }
     private weak var lastActive: Group?
+    /// 关掉的标签，后关的在最后，⇧⌘T 按这个顺序重新打开。没存过的新文档没有路径，不记。
+    private var closedURLs: [URL] = []
+    /// 批量关闭时等未保存询问框收起的监听，按窗口存，用完即删。
+    private var sheetObservers: [ObjectIdentifier: NSObjectProtocol] = [:]
     /// 新窗口上屏前后系统会让新旧窗口轮流成为焦点，这段时间不把焦点变化当成切标签。
     private var adopting = 0
 
@@ -129,6 +135,52 @@ final class WindowTabs {
         window.performClose(nil)
     }
 
+    /// 关掉组里除它以外的标签（only = nil 时只关它右边的）。先把它摆出来，其余都在后台。
+    /// 有未保存改动的一个个切过来问，用户点了取消就停下，后面的不再关。
+    func closeOthers(keeping window: NSWindow, rightOnly: Bool) {
+        guard let group = group(of: window), let index = group.windows.firstIndex(where: { $0 === window }) else { return }
+        let targets = rightOnly ? Array(group.windows[(index + 1)...]) : group.windows.filter { $0 !== window }
+        select(window)
+        closeInTurn(targets, thenSelect: window)
+    }
+
+    private func closeInTurn(_ list: [NSWindow], thenSelect keep: NSWindow) {
+        guard let window = list.first else {
+            select(keep)
+            return
+        }
+        let rest = Array(list.dropFirst())
+        guard window.isDocumentEdited else {
+            window.performClose(nil)
+            closeInTurn(rest, thenSelect: keep)
+            return
+        }
+        select(window)
+        let key = ObjectIdentifier(window)
+        sheetObservers[key] = NotificationCenter.default.addObserver(forName: NSWindow.didEndSheetNotification, object: window, queue: .main) { _ in
+            MainActor.assumeIsolated {
+                let tabs = WindowTabs.shared
+                if let token = tabs.sheetObservers.removeValue(forKey: key) { NotificationCenter.default.removeObserver(token) }
+                // 询问框收起后窗口要下一拍才真正关掉；还在就是用户取消了，停在它上面。
+                DispatchQueue.main.async {
+                    guard tabs.group(of: window) == nil else { return }
+                    tabs.closeInTurn(rest, thenSelect: keep)
+                }
+            }
+        }
+        window.performClose(nil)
+    }
+
+    /// ⇧⌘T：重新打开最近关掉的标签。文件已被删掉或移走的跳过，接着往前找；已经开着的系统只会把它切到前面。
+    func reopenClosed() {
+        while let url = closedURLs.popLast() {
+            guard FileManager.default.fileExists(atPath: url.path) else { continue }
+            NibApp.log("reopen closed tab")
+            NSDocumentController.shared.openDocument(withContentsOf: url, display: true) { _, _, _ in }
+            return
+        }
+    }
+
     private func didActivate(_ window: NSWindow) {
         guard adopting == 0, let group = group(of: window) else { return }
         lastActive = group
@@ -137,6 +189,10 @@ final class WindowTabs {
 
     private func remove(_ window: NSWindow) {
         guard let group = group(of: window), let index = group.windows.firstIndex(where: { $0 === window }) else { return }
+        if let url = NSDocumentController.shared.document(for: window)?.fileURL {
+            closedURLs.removeAll { $0 == url }
+            closedURLs.append(url)
+        }
         group.windows.remove(at: index)
         if group.windows.isEmpty {
             groups.removeAll { $0 === group }
@@ -175,6 +231,8 @@ final class TabStripModel: ObservableObject {
         let title: String
         let edited: Bool
         let selected: Bool
+        /// 未保存过的新文档没有路径，右键菜单里的路径项置灰。
+        let url: URL?
     }
 
     @Published private(set) var tabs: [Tab] = []
@@ -203,13 +261,18 @@ final class TabStripModel: ObservableObject {
         guard let window else { return }
         let (list, selected) = WindowTabs.shared.tabs(for: window)
         windows = Dictionary(uniqueKeysWithValues: list.map { (ObjectIdentifier($0), $0) })
-        let next = list.map { Tab(id: ObjectIdentifier($0), title: $0.title, edited: $0.isDocumentEdited, selected: $0 === selected) }
+        let next = list.map { Tab(id: ObjectIdentifier($0), title: $0.title, edited: $0.isDocumentEdited, selected: $0 === selected,
+                                     url: NSDocumentController.shared.document(for: $0)?.fileURL) }
         if next != tabs { tabs = next }
+        let editing = WindowTabs.shared.renaming.map(ObjectIdentifier.init)
+        if editing != renaming { renaming = editing }
         if window.frame.width != windowWidth { windowWidth = window.frame.width }
     }
 
     /// 标签条总宽：每个最多 180，且不超过窗口里居中能放下的宽度（两侧各让出模式切换那么宽，合计约 300）。
     var stripWidth: CGFloat {
+        // 只有一篇时只显示文档图标和文件名（照 Typora），给长文件名多留些宽度。
+        if tabs.count <= 1 { return max(60, min(420, windowWidth - 300)) }
         let count = CGFloat(max(tabs.count, 1))
         return max(60, min(count * 180 + (count - 1) + TabMetrics.inset * 2, windowWidth - 300))
     }
@@ -230,6 +293,32 @@ final class TabStripModel: ObservableObject {
 
     func close(_ id: ObjectIdentifier) {
         if let target = windows[id] { WindowTabs.shared.close(target) }
+    }
+
+    /// 正在改名的标签。状态记在 WindowTabs 上：改的是没选中的标签时要先切过去，切过去后显示的是另一个窗口的标签条。
+    @Published private(set) var renaming: ObjectIdentifier?
+
+    func beginRename(_ id: ObjectIdentifier) {
+        guard let target = windows[id] else { return }
+        WindowTabs.shared.renaming = target
+        select(id)
+        refresh()
+    }
+
+    func finishRename(_ id: ObjectIdentifier, to name: String?) {
+        WindowTabs.shared.renaming = nil
+        refresh()
+        guard let name, let target = windows[id] else { return }
+        DocumentRename.rename(target, to: name)
+    }
+
+    func closeOthers(_ id: ObjectIdentifier, rightOnly: Bool) {
+        if let target = windows[id] { WindowTabs.shared.closeOthers(keeping: target, rightOnly: rightOnly) }
+    }
+
+    func hasTabsToRight(of id: ObjectIdentifier) -> Bool {
+        guard let index = tabs.firstIndex(where: { $0.id == id }) else { return false }
+        return index < tabs.count - 1
     }
 }
 
@@ -264,7 +353,12 @@ enum TabStripInstaller {
         subscriptions[ObjectIdentifier(window)] = subscription
 
         // 模式切换也挂在标题栏右侧，同理：放在工具栏里窗口一窄就会被收进「»」。
-        let modes = NSHostingView(rootView: ModeSwitch(controller: controller))
+        let hover = TitlebarHover()
+        let tracker = TitlebarTracker(hover: hover)
+        tracker.frame = titlebar.bounds
+        tracker.autoresizingMask = [.width, .height]
+        titlebar.addSubview(tracker, positioned: .below, relativeTo: nil)
+        let modes = NSHostingView(rootView: TitlebarTools(controller: controller, hover: hover))
         modes.translatesAutoresizingMaskIntoConstraints = false
         titlebar.addSubview(modes)
         NSLayoutConstraint.activate([
@@ -280,42 +374,68 @@ enum TabStripInstaller {
     }
 }
 
-/// 阅读 / 编辑 / 源码三段切换，和标签条同一套胶囊外形。
-struct ModeSwitch: View {
-    @ObservedObject var controller: EditorController
-    @State private var hovered: EditorMode?
+/// 鼠标是否在标题栏上。右侧工具照 Typora：平时藏着，移到标题栏才出现（设置里可改成常驻）。
+@MainActor
+final class TitlebarHover: ObservableObject {
+    @Published var inside = false
+}
 
-    private let items: [(EditorMode, String, LocalizedStringKey)] = [
-        (.read, "book", "Read"),
-        (.edit, "square.and.pencil", "Edit"),
-        (.source, "chevron.left.forwardslash.chevron.right", "Source"),
-    ]
+/// 铺满标题栏、垫在最底下的透明视图，只用来感知鼠标进出。上面盖着的标签条、按钮不影响判断。
+final class TitlebarTracker: NSView {
+    let hover: TitlebarHover
+
+    init(hover: TitlebarHover) {
+        self.hover = hover
+        super.init(frame: .zero)
+        let area = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self)
+        addTrackingArea(area)
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+    override func mouseEntered(with event: NSEvent) { hover.inside = true }
+    override func mouseExited(with event: NSEvent) { hover.inside = false }
+}
+
+/// 标题栏右侧一组：字数、大纲、编辑开关（11-19 Felix 定：三段模式切换缩成一个开关，源码模式走 ⌘/ 和菜单，照 Typora 的简洁）。
+/// 平时藏起来，鼠标进标题栏或面板开着时才出现（照 Typora）。
+struct TitlebarTools: View {
+    @ObservedObject var controller: EditorController
+    @ObservedObject var hover: TitlebarHover
+    @ObservedObject private var settings = AppSettings.shared
 
     var body: some View {
+        let visible = settings.alwaysShowTools || hover.inside || controller.showOutline || controller.showWordCount
         HStack(spacing: 2) {
-            ForEach(items, id: \.0) { mode, icon, label in
-                let selected = controller.mode == mode
-                Image(systemName: icon)
-                    .font(.system(size: 13, weight: .regular))
-                    .foregroundStyle(selected ? .primary : .secondary)
-                    .frame(width: 34, height: TabMetrics.height)
-                    .background(Capsule(style: .continuous)
-                        .fill(Color.primary.opacity(selected ? 0.1 : (hovered == mode ? 0.05 : 0))))
-                    .contentShape(Capsule(style: .continuous))
-                    .onTapGesture { controller.setMode(mode) }
-                    .onHover { inside in
-                        if inside { hovered = mode } else if hovered == mode { hovered = nil }
-                    }
-                    .help(label)
-                    .accessibilityElement()
-                    .accessibilityLabel(label)
-                    .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
-                    .accessibilityAction { controller.setMode(mode) }
-            }
+            WordCountButton(controller: controller)
+            OutlineButton(controller: controller)
+            EditToggle(controller: controller)
         }
         .padding(TabMetrics.inset)
         .modifier(GlassCapsule())
-        .animation(.easeOut(duration: 0.12), value: controller.mode)
+        .opacity(visible ? 1 : 0)
+        .allowsHitTesting(visible)
+        .animation(.easeOut(duration: visible ? 0.12 : 0.25), value: visible)
+    }
+}
+
+/// 编辑开关：阅读时点它进编辑，编辑或源码时点它回阅读；处在编辑或源码时按钮垫底色表示「开着」。
+/// 源码模式时图标换成源码符号，看得出现在是哪种。
+struct EditToggle: View {
+    @ObservedObject var controller: EditorController
+
+    var body: some View {
+        let editing = controller.mode != .read
+        TitlebarItem(active: editing, help: editing ? "Done Editing" : "Edit", action: {
+            controller.setMode(editing ? .read : .edit)
+        }) {
+            Image(systemName: controller.mode == .source ? "chevron.left.forwardslash.chevron.right" : "square.and.pencil")
+                .font(.system(size: 13))
+                .foregroundStyle(editing ? .primary : .secondary)
+        }
+        .accessibilityLabel(Text("Edit"))
+        .accessibilityAddTraits(editing ? [.isButton, .isSelected] : .isButton)
     }
 }
 
@@ -331,11 +451,25 @@ struct TabStrip: View {
     @State private var hovered: ObjectIdentifier?
 
     var body: some View {
+        if model.tabs.count == 1, let tab = model.tabs.first {
+            DocumentTitle(tab: tab, renaming: model.renaming == tab.id, finish: { model.finishRename(tab.id, to: $0) })
+                .onTapGesture(count: 2) { model.beginRename(tab.id) }
+                .contextMenu { TabMenu(tab: tab, model: model) }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            strip
+        }
+    }
+
+    private var strip: some View {
         HStack(spacing: 0) {
             ForEach(Array(model.tabs.enumerated()), id: \.element.id) { index, tab in
                 if index > 0 { separator(between: model.tabs[index - 1], and: tab) }
                 TabButton(tab: tab, width: model.tabWidth(selected: tab.selected), single: model.tabs.count == 1, hovering: hovered == tab.id,
-                          select: { model.select(tab.id) }, close: { model.close(tab.id) })
+                          select: { model.select(tab.id) }, close: { model.close(tab.id) },
+                          renaming: model.renaming == tab.id, rename: { model.beginRename(tab.id) },
+                          finish: { model.finishRename(tab.id, to: $0) })
+                    .contextMenu { TabMenu(tab: tab, model: model) }
                     .onHover { inside in
                         if inside { hovered = tab.id } else if hovered == tab.id { hovered = nil }
                     }
@@ -363,9 +497,16 @@ private struct TabButton: View {
     let hovering: Bool
     let select: () -> Void
     let close: () -> Void
+    var renaming = false
+    var rename: () -> Void = {}
+    var finish: (String?) -> Void = { _ in }
 
     var body: some View {
         ZStack {
+            if renaming {
+                RenameField(initial: tab.title, finish: finish)
+                    .padding(.horizontal, 22)
+            } else {
             Text(tab.title)
                 .font(.system(size: 12, weight: tab.selected ? .medium : .regular))
                 .lineLimit(1)
@@ -374,6 +515,7 @@ private struct TabButton: View {
                 // 窄标签让出给关闭按钮的边距，太窄（<40）干脆不放字，免得只剩一个省略号。
                 .padding(.horizontal, min(24, width * 0.2))
                 .opacity(width < 40 ? 0 : 1)
+            }
             // 左边一格：悬停时是关闭，有未保存改动时是圆点，标题始终居中不跳。
             HStack {
                 if hovering && !single {
@@ -391,13 +533,74 @@ private struct TabButton: View {
                 .fill(Color.primary.opacity(single ? 0 : (tab.selected ? 0.1 : (hovering ? 0.05 : 0))))
         )
         .contentShape(Capsule(style: .continuous))
+        // 双击改名（照访达和 Safari 标签组）；单击照常切换。
+        .onTapGesture(count: 2, perform: rename)
         .onTapGesture(perform: select)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(tab.edited ? Text("\(tab.title), Edited") : Text(tab.title))
         .accessibilityAddTraits(tab.selected ? [.isButton, .isSelected] : .isButton)
         .accessibilityAction(named: Text("Close Tab"), close)
+        .accessibilityAction(named: Text("Rename…"), rename)
         .animation(.easeOut(duration: 0.12), value: hovering)
         .animation(.easeOut(duration: 0.12), value: tab.selected)
+    }
+}
+
+/// 只有一篇文档时的标题：文档图标加文件名，不画胶囊，和系统标题栏、Typora 一样。未保存时文件名后面跟「已编辑」。
+private struct DocumentTitle: View {
+    let tab: TabStripModel.Tab
+    let renaming: Bool
+    let finish: (String?) -> Void
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(nsImage: icon).resizable().frame(width: 15, height: 15)
+            if renaming {
+                RenameField(initial: tab.title, finish: finish).frame(width: 220)
+            } else {
+            Text(tab.title)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            }
+            if tab.edited && !renaming {
+                Text("— Edited").font(.system(size: 13)).foregroundStyle(.tertiary).lineLimit(1).fixedSize()
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private var icon: NSImage {
+        if let url = tab.url { return NSWorkspace.shared.icon(forFile: url.path) }
+        return NSWorkspace.shared.icon(for: .markdownDocument)
+    }
+}
+
+/// 标签右键菜单：关闭类在上，路径类在下，和 Safari 的标签菜单一个顺序。
+private struct TabMenu: View {
+    let tab: TabStripModel.Tab
+    let model: TabStripModel
+
+    var body: some View {
+        Button("Rename…") { model.beginRename(tab.id) }
+        Divider()
+        Button("Close Tab") { model.close(tab.id) }
+        Button("Close Other Tabs") { model.closeOthers(tab.id, rightOnly: false) }
+            .disabled(model.tabs.count < 2)
+        Button("Close Tabs to the Right") { model.closeOthers(tab.id, rightOnly: true) }
+            .disabled(!model.hasTabsToRight(of: tab.id))
+        Divider()
+        Button("Copy Path") {
+            guard let path = tab.url?.path else { return }
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(path, forType: .string)
+        }
+        .disabled(tab.url == nil)
+        Button("Reveal in Finder") {
+            if let url = tab.url { NSWorkspace.shared.activateFileViewerSelecting([url]) }
+        }
+        .disabled(tab.url == nil)
     }
 }
 
@@ -421,7 +624,7 @@ private struct CloseButton: View {
 }
 
 /// 和工具栏里模式切换一样的玻璃胶囊底。macOS 26 起用系统的 Liquid Glass，更早的系统退回半透明材质。
-private struct GlassCapsule: ViewModifier {
+struct GlassCapsule: ViewModifier {
     func body(content: Content) -> some View {
         if #available(macOS 26, *) {
             content.glassEffect(.regular, in: Capsule(style: .continuous))

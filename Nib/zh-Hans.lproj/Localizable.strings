@@ -9,6 +9,12 @@
 "Actual Size" = "实际大小";
 "Show Tab %lld" = "显示第 %lld 个标签页";
 "Show Last Tab" = "显示最后一个标签页";
+"New Tab" = "新建标签页";
+"Reopen Closed Tab" = "重新打开关闭的标签页";
+"Close Other Tabs" = "关闭其他标签页";
+"Close Tabs to the Right" = "关闭右侧标签页";
+"Copy Path" = "拷贝路径";
+"Reveal in Finder" = "在访达中显示";
 
 /* 工具栏 */
 "Mode" = "模式";
@@ -43,6 +49,7 @@
 "Takes effect after you reopen Nib." = "重新打开 Nib 后生效。";
 "Restore Defaults" = "恢复默认";
 "New Tab" = "新建标签页";
+"Reopen Closed Tab" = "重新打开关闭的标签页";
 "Close Tab" = "关闭标签页";
 "Editing" = "编辑";
 "Source Mode" = "源码模式";
@@ -59,3 +66,41 @@
 "Open Themes Folder" = "打开主题文件夹";
 "Typora themes supported." = "兼容 Typora 主题，放进主题文件夹即可使用。";
 "Themes Folder…" = "主题文件夹…";
+
+/* 快捷键设置 */
+"General" = "通用";
+"Shortcuts" = "快捷键";
+"File" = "文件";
+"View" = "显示";
+"Window" = "窗口";
+"Open…" = "打开…";
+"Save" = "保存";
+"Close" = "关闭";
+"Type shortcut" = "按下快捷键";
+"Used by “%@”" = "已被「%@」占用";
+"Click a shortcut, then press the new keys. Esc cancels, ⌫ restores the default." = "点快捷键后按新组合键。Esc 放弃，⌫ 恢复默认。";
+
+/* 字数统计 */
+"Word Count" = "字数统计";
+"Words" = "词数";
+"Characters" = "字符数";
+"Lines" = "行数";
+"Reading Time" = "阅读时间";
+"%lld words" = "%lld 词";
+"%lld characters" = "%lld 字符";
+"%lld lines" = "%lld 行";
+"%lld min" = "%lld 分钟";
+"Selection" = "选中";
+"Document" = "全文";
+"Reading speed" = "阅读速度";
+"%lld words/min" = "每分钟 %lld 词";
+"Used for the reading time in word count. One Chinese character counts as one word." = "用于字数统计里的阅读时间，一个汉字算一个词。";
+"— Edited" = "— 已编辑";
+"Always show word count and modes in title bar" = "标题栏始终显示字数和模式切换";
+"Rename…" = "重新命名…";
+"“%@” already exists." = "已存在名为「%@」的文件。";
+"Choose a different name." = "请换一个名字。";
+"Outline" = "大纲";
+"Show Outline" = "显示大纲";
+"No headings" = "没有标题";
+"Done Editing" = "完成编辑";

@@ -1,5 +1,7 @@
 // Typora 主题：主题 CSS 只在阅读模式（readView.js 渲染的 #write）里打开。
-// 编辑和源码模式不套整份主题，只借它的底色、文字色、链接色和字体，切模式时页面不会突然换一副样子。
+// 编辑模式用 typoraEdit.js 从主题量出来的样式（标题、段落、引用、代码、表格、块间距……）；
+// 源码模式只借底色、文字色、链接色和字体。
+import { deriveEditCSS } from './typoraEdit.js'
 
 // Typora 自己的基础样式（主题都是在它之上写的），这里只留主题普遍依赖的部分。
 const BASE_CSS = `
@@ -45,7 +47,9 @@ export function createTyporaTheme({ post }) {
   base.textContent = BASE_CSS
   const theme = document.createElement('style')
   theme.id = 'nib-typora-theme'
-  document.head.append(base, theme)
+  const edit = document.createElement('style')
+  edit.id = 'nib-typora-edit'
+  document.head.append(base, theme, edit)
   base.disabled = true
   theme.disabled = true
 
@@ -56,6 +60,7 @@ export function createTyporaTheme({ post }) {
     reading = on && !!css
     base.disabled = !reading
     theme.disabled = !reading
+    document.body.classList.toggle('nib-themed-edit', !!css && !reading)
   }
 
   /** 打开主题量一下 #write 的底色、文字、字体，交给编辑和源码模式用，量完按当前模式恢复。 */
@@ -64,6 +69,7 @@ export function createTyporaTheme({ post }) {
     const write = document.getElementById('write')
     if (!css || !write) {
       document.body.classList.remove('typora-active')
+      edit.textContent = ''
       for (const name of ['--t-bg', '--t-text', '--t-text2', '--t-text3', '--t-accent', '--t-sans', '--t-mono']) root.style.removeProperty(name)
       return
     }
@@ -89,6 +95,16 @@ export function createTyporaTheme({ post }) {
     const accent = getComputedStyle(probeLink).color
     const sans = style.fontFamily
     const mono = getComputedStyle(probeCode).fontFamily
+    // 阅读层按 Nib 字号缩放过，量之前先去掉，量完还原。
+    const zoom = container.style.zoom
+    container.style.zoom = ''
+    try {
+      edit.textContent = deriveEditCSS(write)
+    } catch (error) {
+      edit.textContent = ''
+      post({ type: 'log', text: `typora edit css failed: ${error}` })
+    }
+    container.style.zoom = zoom
 
     probeLink.remove()
     probeCode.remove()

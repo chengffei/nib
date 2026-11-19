@@ -61,7 +61,12 @@ class TableWidget extends WidgetType {
     )
     const wrap = document.createElement('div')
     wrap.className = 'nib-table-wrap'
+    // 结构照 Typora（thead / tbody、md-table），主题的表头和隔行样式才对得上。
     const table = document.createElement('table')
+    table.className = 'md-table'
+    const thead = document.createElement('thead')
+    const tbody = document.createElement('tbody')
+    table.append(thead, tbody)
     lines.forEach((line, index) => {
       if (index === 1) return
       const tr = document.createElement('tr')
@@ -72,7 +77,7 @@ class TableWidget extends WidgetType {
         el.innerHTML = inline(cell)
         tr.appendChild(el)
       })
-      table.appendChild(tr)
+      ;(index === 0 ? thead : tbody).appendChild(tr)
     })
     keepShortColumns(table)
     wrap.appendChild(table)

@@ -183,6 +183,10 @@ function build(view) {
   }
 
   for (const range of view.visibleRanges) {
+    // 空行：块之间的空行在套主题时压成主题的块间距。
+    eachLine(doc, range.from, range.to, (line) => {
+      if (!line.text.trim()) lineDeco(line.from, 'nib-blank')
+    })
     tree.iterate({
       from: range.from,
       to: range.to,
@@ -211,6 +215,16 @@ function build(view) {
         if (name === 'Table' || name === 'HTMLBlock') {
           blockLines(n, range, 'nib-mono')
           return false
+        }
+
+        // 顶层段落和列表标出首末行：套 Typora 主题时块间距按块的种类算（typoraEdit.js）。
+        if (name === 'Paragraph' && n.node.parent?.name === 'Document') {
+          blockLines(n, range, 'nib-p')
+          return true
+        }
+        if ((name === 'BulletList' || name === 'OrderedList') && n.node.parent?.name === 'Document') {
+          blockLines(n, range, 'nib-list')
+          return true
         }
 
         const key = `${name}:${n.from}`
@@ -298,6 +312,7 @@ function build(view) {
           return
         }
         if (name === 'HorizontalRule') {
+          lineDeco(doc.lineAt(n.from).from, 'nib-hrline')
           if (!touches(act, n.from, n.to)) {
             decos.push(Decoration.replace({ widget: new HrWidget() }).range(n.from, n.to))
           }

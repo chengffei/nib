@@ -55,35 +55,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct EditorCommands: Commands {
     // FocusedObject 会跟着 controller 的 mode 变化刷新菜单，勾选状态才对。
     @FocusedObject private var controller: EditorController?
+    /// 快捷键可在设置里改，改了菜单跟着刷新。
+    @ObservedObject private var shortcuts = ShortcutStore.shared
 
     var body: some Commands {
+        // ⌘T 和浏览器一样开新标签：新文档窗口会被 WindowTabs 并进当前组。⌘N 照旧。
+        CommandGroup(after: .newItem) {
+            Button("New Tab") { NSDocumentController.shared.newDocument(nil) }
+                .keyboardShortcut(shortcuts.shortcut("New Tab"))
+            Button("Reopen Closed Tab") { WindowTabs.shared.reopenClosed() }
+                .keyboardShortcut(shortcuts.shortcut("Reopen Closed Tab"))
+        }
         CommandGroup(replacing: .undoRedo) {
-            item("Undo", "nib.undo()", "z")
-            item("Redo", "nib.redo()", "z", [.command, .shift])
+            item("Undo", "nib.undo()")
+            item("Redo", "nib.redo()")
         }
         CommandGroup(after: .pasteboard) {
             Divider()
-            item("Find…", "nib.find()", "f")
+            item("Find…", "nib.find()")
         }
         CommandGroup(before: .toolbar) {
             // 三种模式做成带勾的菜单项，当前模式打勾（HIG：有状态的命令显示状态，不用「切换」这种说不清方向的名字）。
             modeItem("Read", .read) { controller?.setMode(.read) }
             modeItem("Editing", .edit) { controller?.run("nib.toggleEdit()") }
-                .keyboardShortcut("e", modifiers: .command)
             modeItem("Source Mode", .source) { controller?.run("nib.toggleSource()") }
-                .keyboardShortcut("/", modifiers: .command)
             Divider()
-            Button("Zoom In") { AppSettings.shared.zoom(1) }.keyboardShortcut("=", modifiers: .command)
-            Button("Zoom Out") { AppSettings.shared.zoom(-1) }.keyboardShortcut("-", modifiers: .command)
-            Button("Actual Size") { AppSettings.shared.zoom(0) }.keyboardShortcut("0", modifiers: .command)
+            Button("Show Outline") { controller?.showOutline.toggle() }
+                .keyboardShortcut(shortcuts.shortcut("Show Outline"))
+                .disabled(controller == nil)
+            Divider()
+            Button("Zoom In") { AppSettings.shared.zoom(1) }.keyboardShortcut(shortcuts.shortcut("Zoom In"))
+            Button("Zoom Out") { AppSettings.shared.zoom(-1) }.keyboardShortcut(shortcuts.shortcut("Zoom Out"))
+            Button("Actual Size") { AppSettings.shared.zoom(0) }.keyboardShortcut(shortcuts.shortcut("Actual Size"))
             Divider()
         }
         CommandGroup(before: .windowList) {
             // 和 Safari 一样：前后切换放在窗口菜单里（⇧⌘[ ]；⌃⇥ 会被网页视图当成焦点切换吃掉，实测不触发），⌘1 到 ⌘9 收进子菜单，不把窗口菜单撑长。
             Button("Show Previous Tab") { WindowTabs.shared.selectAdjacent(-1) }
-                .keyboardShortcut("[", modifiers: [.command, .shift])
+                .keyboardShortcut(shortcuts.shortcut("Show Previous Tab"))
             Button("Show Next Tab") { WindowTabs.shared.selectAdjacent(1) }
-                .keyboardShortcut("]", modifiers: [.command, .shift])
+                .keyboardShortcut(shortcuts.shortcut("Show Next Tab"))
             Menu("Go to Tab") {
                 // ⌘1 到 ⌘8 按位置切标签，⌘9 固定去最后一个。两个标题分开写：三目运算会让它们变成普通字符串，不走本地化。
                 ForEach(1...9, id: \.self) { number in
@@ -103,14 +114,16 @@ struct EditorCommands: Commands {
         WindowTabs.shared.select(number: number)
     }
 
-    private func modeItem(_ title: LocalizedStringKey, _ mode: EditorMode, action: @escaping () -> Void) -> some View {
-        Toggle(title, isOn: Binding(get: { controller?.mode == mode }, set: { _ in action() }))
+    /// title 是英文菜单标题，既是本地化 key 也是快捷键设置的 key。
+    private func modeItem(_ title: String, _ mode: EditorMode, action: @escaping () -> Void) -> some View {
+        Toggle(LocalizedStringKey(title), isOn: Binding(get: { controller?.mode == mode }, set: { _ in action() }))
+            .keyboardShortcut(shortcuts.shortcut(title))
             .disabled(controller == nil)
     }
 
-    private func item(_ title: LocalizedStringKey, _ script: String, _ key: KeyEquivalent, _ modifiers: EventModifiers = .command) -> some View {
-        Button(title) { controller?.run(script) }
-            .keyboardShortcut(key, modifiers: modifiers)
+    private func item(_ title: String, _ script: String) -> some View {
+        Button(LocalizedStringKey(title)) { controller?.run(script) }
+            .keyboardShortcut(shortcuts.shortcut(title))
             .disabled(controller == nil)
     }
 }

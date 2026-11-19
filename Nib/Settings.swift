@@ -86,6 +86,13 @@ final class AppSettings: ObservableObject {
             Self.applyHistory()
         }
     }
+    /// 标题栏字数按钮显示哪一项："words"、"chars"、"lines"、"minutes"。
+    @Published var wordCountUnit: String { didSet { UserDefaults.standard.set(wordCountUnit, forKey: "wordCountUnit") } }
+    /// 标题栏右侧工具（字数、模式切换）常驻；关着时鼠标移到标题栏才出现。
+    @Published var alwaysShowTools: Bool { didSet { UserDefaults.standard.set(alwaysShowTools, forKey: "alwaysShowTools") } }
+    /// 阅读速度，每分钟多少词（一个汉字算一个词），算阅读时间用。
+    @Published var readingSpeed: Int { didSet { UserDefaults.standard.set(readingSpeed, forKey: "readingSpeed") } }
+    static let readingSpeedRange = 100...1000
     /// 重开 Nib 时要不要恢复上次的窗口（含没保存的「未命名」）。
     @Published var restoreWindows: Bool {
         didSet {
@@ -123,6 +130,9 @@ final class AppSettings: ObservableObject {
         rememberRecents = store.object(forKey: "rememberRecents") as? Bool ?? true
         restoreWindows = store.bool(forKey: "restoreWindows")
         language = store.string(forKey: "language") ?? Self.systemLanguage
+        alwaysShowTools = store.bool(forKey: "alwaysShowTools")
+        wordCountUnit = store.string(forKey: "wordCountUnit") ?? "words"
+        readingSpeed = store.object(forKey: "readingSpeed") as? Int ?? 300
     }
 
     func restoreDefaults() {
@@ -252,6 +262,13 @@ struct SettingsView: View {
     // 只留会改的几项（11-16 Felix 觉得原来那页复杂无用）：行高、版心、代码字体用默认就好；
     // 界面语言交给系统设置里的「App 语言」；项目少到不需要「恢复默认」。
     var body: some View {
+        TabView {
+            general.tabItem { Label("General", systemImage: "gearshape") }
+            ShortcutsSettingsView().tabItem { Label("Shortcuts", systemImage: "keyboard") }
+        }
+    }
+
+    private var general: some View {
         Form {
             Section {
                 Picker("Theme", selection: themeChoice) {
@@ -285,6 +302,15 @@ struct SettingsView: View {
                 }
                 Toggle("Remember recent documents", isOn: $settings.rememberRecents)
                 Toggle("Reopen windows when Nib starts", isOn: $settings.restoreWindows)
+                Toggle("Always show word count and modes in title bar", isOn: $settings.alwaysShowTools)
+            }
+            Section {
+                Stepper(value: $settings.readingSpeed, in: AppSettings.readingSpeedRange, step: 50) {
+                    LabeledContent("Reading speed") { Text("\(settings.readingSpeed) words/min").monospacedDigit() }
+                }
+            } footer: {
+                Text("Used for the reading time in word count. One Chinese character counts as one word.")
+                    .font(.footnote).foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)

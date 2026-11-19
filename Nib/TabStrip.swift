@@ -34,6 +34,7 @@ final class WindowTabs {
     /// 新文档窗口进来：并进当前在用的那组，放在选中标签后面，叠到同一位置。
     func adopt(_ window: NSWindow) {
         guard group(of: window) == nil else { return }
+        ExplicitSave.apply(to: window)
         window.tabbingMode = .disallowed
         // 切标签是收起一个、摆出另一个，系统的窗口弹出动画会让它看起来像开了新窗口。
         window.animationBehavior = .none

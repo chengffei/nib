@@ -30,7 +30,8 @@ final class AppSettings: ObservableObject {
     @Published var lineHeight: Double { didSet { changed("lineHeight", lineHeight) } }
     /// 版心宽度，单位是字号的倍数。
     @Published var contentWidth: Double { didSet { changed("contentWidth", contentWidth) } }
-    @Published var openInEdit: Bool { didSet { changed("openInEdit", openInEdit) } }
+    /// 打开文稿时进哪种模式："read"、"edit"、"source"。空文档总是进编辑。
+    @Published var openMode: String { didSet { changed("openMode", openMode) } }
     /// 选中的 Typora 主题 .css 的路径；空串表示不用。
     @Published var typoraTheme: String {
         didSet {
@@ -113,8 +114,10 @@ final class AppSettings: ObservableObject {
         fontSize = store.object(forKey: "fontSize") as? Double ?? 16
         lineHeight = store.object(forKey: "lineHeight") as? Double ?? 1.6
         contentWidth = store.object(forKey: "contentWidth") as? Double ?? 44
-        openInEdit = store.bool(forKey: "openInEdit")
-        let typora = store.string(forKey: "typoraTheme") ?? ""
+        // 旧版本只存了「是否进编辑」，没有新值时从它换算。
+        openMode = store.string(forKey: "openMode") ?? (store.bool(forKey: "openInEdit") ? "edit" : "read")
+        var typora = store.string(forKey: "typoraTheme") ?? ""
+        if !typora.isEmpty && !TyporaThemes.isInFolder(typora) { typora = "" }
         typoraTheme = typora
         typoraCSS = typora.isEmpty ? nil : TyporaThemes.bundledCSS(path: typora)
         rememberRecents = store.object(forKey: "rememberRecents") as? Bool ?? true
@@ -129,7 +132,7 @@ final class AppSettings: ObservableObject {
         fontSize = 16
         lineHeight = 1.6
         contentWidth = 44
-        openInEdit = false
+        openMode = "read"
         typoraTheme = ""
         rememberRecents = true
         restoreWindows = false
@@ -203,7 +206,7 @@ final class AppSettings: ObservableObject {
             "fontSize": fontSize,
             "lineHeight": lineHeight,
             "width": contentWidth,
-            "defaultMode": openInEdit ? "edit" : "read",
+            "defaultMode": openMode,
             "lang": Self.currentLanguage,
             "typoraCSS": typoraCSS ?? NSNull(),
         ]
@@ -268,16 +271,17 @@ struct SettingsView: View {
                 slider("Size", $settings.fontSize, AppSettings.fontSizeRange, 1) { "\(Int($0)) pt" }
             } footer: {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("Typora themes are listed too.").foregroundStyle(.secondary)
+                    Text("Typora themes supported.").foregroundStyle(.secondary)
                     Spacer()
                     Button("Themes Folder…") { TyporaThemes.openFolder() }.buttonStyle(.link)
                 }
                 .font(.footnote)
             }
             Section {
-                Picker("Open documents in", selection: $settings.openInEdit) {
-                    Text("Reading mode").tag(false)
-                    Text("Editing mode").tag(true)
+                Picker("Open documents in", selection: $settings.openMode) {
+                    Text("Reading mode").tag("read")
+                    Text("Editing mode").tag("edit")
+                    Text("Source mode").tag("source")
                 }
                 Toggle("Remember recent documents", isOn: $settings.rememberRecents)
                 Toggle("Reopen windows when Nib starts", isOn: $settings.restoreWindows)

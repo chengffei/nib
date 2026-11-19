@@ -1,7 +1,7 @@
 import AppKit
 
-/// Typora 主题：一个 .css 加一个同名文件夹（字体、图片）。从两处找：
-/// Nib 自己的主题文件夹，和本机 Typora 的主题文件夹（装过 Typora 的话，那边的主题直接能用）。
+/// Typora 主题：一个 .css 加一个同名文件夹（字体、图片）。
+/// 只从 Nib 自己的主题文件夹找；兼容的是 Typora 主题的格式，不读 Typora 软件的文件夹（11-19 Felix 定）。
 enum TyporaThemes {
     struct Theme: Identifiable, Hashable {
         let url: URL
@@ -20,26 +20,18 @@ enum TyporaThemes {
         return support.appendingPathComponent("Nib/themes", isDirectory: true)
     }
 
-    static var typoraFolder: URL {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return support.appendingPathComponent("abnerworks.Typora/themes", isDirectory: true)
+    /// 主题文件夹里的主题。base.user.css 和 xxx.user.css 是 Typora 的用户覆盖，不算主题。
+    static func all() -> [Theme] {
+        let files = (try? FileManager.default.contentsOfDirectory(at: nibFolder, includingPropertiesForKeys: nil)) ?? []
+        return files
+            .filter { $0.pathExtension.lowercased() == "css" && !$0.lastPathComponent.hasSuffix(".user.css") }
+            .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+            .map(Theme.init)
     }
 
-    /// 两个文件夹里的主题。同名的以 Nib 文件夹为准。base.user.css 和 xxx.user.css 是 Typora 的用户覆盖，不算主题。
-    static func all() -> [Theme] {
-        var seen = Set<String>()
-        var result: [Theme] = []
-        for folder in [nibFolder, typoraFolder] {
-            let files = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []
-            for file in files.sorted(by: { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending })
-            where file.pathExtension.lowercased() == "css" && !file.lastPathComponent.hasSuffix(".user.css") {
-                let key = file.deletingPathExtension().lastPathComponent.lowercased()
-                guard !seen.contains(key) else { continue }
-                seen.insert(key)
-                result.append(Theme(url: file))
-            }
-        }
-        return result
+    /// 选中的主题是否在主题文件夹里；以前从 Typora 文件夹选的不再认。
+    static func isInFolder(_ path: String) -> Bool {
+        URL(fileURLWithPath: path).deletingLastPathComponent().standardizedFileURL.path == nibFolder.standardizedFileURL.path
     }
 
     static func openFolder() {

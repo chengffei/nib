@@ -1,6 +1,6 @@
-// 查找条：照 macOS 的样子重做（TextEdit / Safari 的查找栏）。
-// 左边带放大镜的圆角搜索框和「第几个 / 共几个」，接着上一个 / 下一个箭头和三个选项开关，最右边「完成」。
-// 可编辑时第二行是替换。CodeMirror 自带的那条是网页按钮和复选框，和系统控件对不上。
+// Find bar: rebuilt to look like macOS (the TextEdit / Safari find bar).
+// A rounded search field with a magnifier on the left and an "n of m" counter, followed by previous / next arrows and three option toggles, with "Done" on the far right.
+// When editable, the second row is replace. CodeMirror's built-in bar uses web buttons and checkboxes, which do not match system controls.
 
 import {
   SearchQuery, closeSearchPanel, findNext, findPrevious, getSearchQuery, replaceAll, replaceNext, setSearchQuery,
@@ -105,7 +105,7 @@ export function createFindPanel(view) {
     }
   }
 
-  // 「第几个 / 共几个」。数到上限就停，大文档里不卡。
+  // "n of m" counter. Counting stops at a cap so large documents do not lag.
   function updateCount() {
     if (!query.search || !query.valid) {
       count.textContent = ''

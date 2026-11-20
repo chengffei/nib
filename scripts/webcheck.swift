@@ -1,5 +1,5 @@
-// 不启动 app，直接把打包好的编辑器装进离屏 WKWebView：跑断言并截图。
-// 用法：swift scripts/webcheck.swift <md 文件> <输出.png> [dark] [要执行的 JS]
+// Without launching the app, load the bundled editor into an offscreen WKWebView: run assertions and take a screenshot.
+// Usage: swift scripts/webcheck.swift <md file> <output.png> [dark] [JS to run]
 import AppKit
 import WebKit
 
@@ -45,17 +45,17 @@ func after(_ seconds: Double, _ block: @escaping @MainActor () -> Void) {
 
 after(1.2) {
     webView.evaluateJavaScript("(function(){ \(script) })()") { result, error in
-        if let error { print("JS 错误:", error) }
-        if let result, !(result is NSNull) { print("JS 结果:", result) }
+        if let error { print("JS error:", error) }
+        if let result, !(result is NSNull) { print("JS result:", result) }
         after(0.5) {
             webView.evaluateJavaScript("nib.getText()") { value, _ in
-                print("往返一致:", (value as? String) == text)
-                print("收到消息:", handler.messages.map { $0["type"] as? String ?? "?" })
+                print("round-trip identical:", (value as? String) == text)
+                print("messages received:", handler.messages.map { $0["type"] as? String ?? "?" })
                 webView.takeSnapshot(with: nil) { image, _ in
                     if let tiff = image?.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff),
                        let png = rep.representation(using: .png, properties: [:]) {
                         try! png.write(to: output)
-                        print("截图:", output.path)
+                        print("screenshot:", output.path)
                     }
                     exit(0)
                 }

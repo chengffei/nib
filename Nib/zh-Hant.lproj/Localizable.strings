@@ -59,10 +59,11 @@
 "Remember recent documents" = "記錄最近打開的文件";
 "Reopen windows when Nib starts" = "啟動時恢復上次的視窗";
 "Turning off recent documents also clears the existing list." = "關閉「記錄最近打開的文件」會同時清除已有記錄。";
-"Typora Theme" = "Typora 主題";
 "None" = "不使用";
 "Open Themes Folder" = "打開主題檔案夾";
-"Typora themes supported." = "相容 Typora 主題格式，放進主題檔案夾即可使用。";
+"Custom" = "自訂";
+"Add CSS themes to the themes folder. Typora themes work too." = "把主題 CSS 放進主題檔案夾即可使用，也相容 Typora 主題。";
+"Writing Themes" = "編寫主題";
 "Themes Folder…" = "主題檔案夾…";
 
 /* 快捷键设置 */

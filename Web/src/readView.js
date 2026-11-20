@@ -1,12 +1,12 @@
-// 选了 Typora 主题时的阅读模式：把 md 渲染成和 Typora 导出一样结构的 HTML（#write 里的 h1、p、pre.md-fences、
-// figure.table-figure……），主题 CSS 才能原样生效。编辑和源码模式仍走 CodeMirror。
+// Read mode with a Typora theme selected: renders markdown into HTML with the same structure as a Typora export (h1, p, pre.md-fences inside #write,
+// figure.table-figure, ...) so the theme CSS applies as-is. Edit and source modes still use CodeMirror.
 
 import MarkdownIt from 'markdown-it'
 import { keepShortColumns } from './tableColumns.js'
 import { highlightCode, tagHighlighter, tags as t } from '@lezer/highlight'
 import { t as tr } from './i18n.js'
 
-// 代码块按 Typora（CodeMirror 5）的类名上色，主题里写的 .cm-s-inner .cm-keyword 之类才认得。
+// Code blocks are coloured with Typora's (CodeMirror 5) class names, which is what selectors like .cm-s-inner .cm-keyword in themes recognise.
 const cm5 = tagHighlighter([
   { tag: t.keyword, class: 'cm-keyword' },
   { tag: [t.atom, t.bool, t.null], class: 'cm-atom' },
@@ -39,7 +39,7 @@ const slug = (text) =>
 const escape = (text) => text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
 
 export function createReadView({ codeLanguages, resolveImage, openLink, attachScrollbar }) {
-  // 不放行 md 里的原始 HTML：网页视图里能跑脚本，打开来路不明的文稿不该执行里面的东西。
+  // Raw HTML in markdown is not allowed through: a web view can run scripts, and opening an untrusted document must not execute its contents.
   const md = new MarkdownIt({ html: false, linkify: true, typographer: false })
 
   const languageFor = (name) => {
@@ -48,7 +48,7 @@ export function createReadView({ codeLanguages, resolveImage, openLink, attachSc
     return codeLanguages.find((d) => d.name === key || d.alias.includes(key)) || null
   }
 
-  // 代码块：照 Typora 导出的结构，一行一个 pre.CodeMirror-line。
+  // Code blocks: following Typora's export structure, one pre.CodeMirror-line per line.
   md.renderer.rules.fence = (tokens, idx) => {
     const token = tokens[idx]
     const name = token.info.trim().split(/\s+/)[0] || ''
@@ -77,7 +77,7 @@ export function createReadView({ codeLanguages, resolveImage, openLink, attachSc
     return `<pre class="md-fences md-end-block ty-contain-cm modeLoaded" spellcheck="false" lang="${lang}"><div class="CodeMirror cm-s-inner cm-s-null-scroll CodeMirror-wrap" lang="${lang}"><div class="CodeMirror-scroll"><div class="CodeMirror-sizer"><div class="CodeMirror-lines" role="presentation"><div role="presentation" class="CodeMirror-code">${body}</div></div></div></div></div></pre>\n`
   }
   md.renderer.rules.code_block = (tokens, idx) => md.renderer.rules.fence(tokens, idx)
-  // 段落是 pre-wrap（照 Typora），markdown-it 在 <br> 后面还跟一个换行符，硬换行就成了两行。
+  // Paragraphs are pre-wrap (as in Typora), and markdown-it follows a <br> with a newline character, so a hard break would render as two lines.
   md.renderer.rules.hardbreak = () => '<br>'
 
   const scroller = document.createElement('div')
@@ -105,9 +105,9 @@ export function createReadView({ codeLanguages, resolveImage, openLink, attachSc
     decorate()
   }
 
-  // 补上 Typora 导出里有、markdown-it 没有的结构：任务列表、表格外框、标题锚点、本地图片地址。
+  // Adds structures present in Typora exports but missing from markdown-it: task lists, table wrappers, heading anchors, local image URLs.
   function decorate() {
-    // Typora 的列表项内容总包在 <p> 里，主题的间距和任务框定位都按这个写；紧凑列表里 markdown-it 不包，这里补上。
+    // Typora always wraps list item content in <p>, and theme spacing and task checkbox positioning assume it; markdown-it does not wrap in tight lists, so it is added here.
     for (const li of write.querySelectorAll('li')) {
       if (li.querySelector(':scope > p')) continue
       const p = document.createElement('p')
@@ -190,7 +190,7 @@ export function createReadView({ codeLanguages, resolveImage, openLink, attachSc
   }
 }
 
-// 阅读模式里的查找：长得和编辑模式那条一样（同一套 nib-find 样式），匹配用 CSS 高亮标出来，不改动正文的 DOM。
+// Find in read mode: looks the same as the edit-mode bar (same nib-find styles); matches are marked with CSS highlights and the body DOM is left untouched.
 function createHtmlFind(scroller, root) {
   const bar = document.createElement('div')
   bar.className = 'nib-find nib-find-floating'
@@ -242,7 +242,7 @@ function createHtmlFind(scroller, root) {
         }
       }
     }
-    // 从屏幕上第一个可见的匹配开始，不跳回文首。
+    // Start from the first match visible on screen instead of jumping back to the top.
     const top = scroller.getBoundingClientRect().top
     current = matches.findIndex((r) => r.getBoundingClientRect().bottom > top)
     if (current < 0 && matches.length) current = 0

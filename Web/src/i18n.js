@@ -1,6 +1,6 @@
-// 网页内核里的界面文案（查找条、图片占位）。外壳的文案在 Nib/*.lproj。
-// 界面语言由外壳在 __nibSettings.lang 里给出（Bundle 选中的本地化，如 zh-Hans、ja），启动后不变。
-// 键是 CodeMirror 的 phrase 原文（英文），没翻译的键直接显示英文。
+// UI strings for the web core (find bar, image placeholder). The shell's strings live in Nib/*.lproj.
+// The UI language is provided by the shell in __nibSettings.lang (the localisation the Bundle selected, e.g. zh-Hans, ja) and does not change after launch.
+// Keys are CodeMirror's original English phrases; keys without a translation are shown in English.
 
 const TABLES = {
   'zh-Hans': {
@@ -56,14 +56,14 @@ const TABLES = {
 
 function pick(lang) {
   if (TABLES[lang]) return TABLES[lang]
-  // zh-HK、zh-TW 之类按书写系统归到繁体，其余中文归简体；其他语言取主语言码
+  // zh-HK, zh-TW and the like map to Traditional by script, other Chinese maps to Simplified; other languages use the primary language code
   if (/^zh-(Hant|HK|TW|MO)/i.test(lang)) return TABLES['zh-Hant']
   if (/^zh/i.test(lang)) return TABLES['zh-Hans']
   return TABLES[lang.split('-')[0]] || {}
 }
 
-/** 当前界面语言的文案表，可直接交给 EditorState.phrases。 */
+/** The string table for the current UI language, ready to pass to EditorState.phrases. */
 export const phrases = pick(window.__nibSettings?.lang || 'en')
 
-/** 取一条文案；没有翻译时用英文原文。 */
+/** Fetches one string; falls back to the English original when untranslated. */
 export const t = (key) => phrases[key] ?? key

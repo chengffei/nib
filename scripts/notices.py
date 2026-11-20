@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""生成 THIRD-PARTY-NOTICES.md：列出打进 Nib/Editor/editor.js 的 npm 包及其许可证原文。
-用法（仓库根目录）：python3 scripts/notices.py   依赖变了就重跑。"""
+"""Generates THIRD-PARTY-NOTICES.md: lists the npm packages bundled into Nib/Editor/editor.js along with their full licence texts.
+Usage (from the repo root): python3 scripts/notices.py   Re-run whenever dependencies change."""
 import json, os, re, subprocess, tempfile
 
 web = os.path.join(os.path.dirname(__file__), '..', 'Web')

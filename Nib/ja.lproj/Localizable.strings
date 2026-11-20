@@ -59,10 +59,11 @@
 "Remember recent documents" = "最近使った書類を記憶";
 "Reopen windows when Nib starts" = "起動時にウインドウを再度開く";
 "Turning off recent documents also clears the existing list." = "「最近使った書類を記憶」をオフにすると、既存のリストも消去されます。";
-"Typora Theme" = "Typora テーマ";
 "None" = "なし";
 "Open Themes Folder" = "テーマフォルダを開く";
-"Typora themes supported." = "Typora 形式のテーマに対応。テーマフォルダに入れるだけで使えます。";
+"Custom" = "カスタム";
+"Add CSS themes to the themes folder. Typora themes work too." = "テーマの CSS をテーマフォルダに入れると使えます。Typora のテーマにも対応。";
+"Writing Themes" = "テーマの作り方";
 "Themes Folder…" = "テーマフォルダ…";
 
 /* 快捷键设置 */

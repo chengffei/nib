@@ -1,4 +1,4 @@
-// 表格：光标不在表格里时整块渲染成 HTML 表格，点进去或方向键进入后回到源码。
+// Tables: when the cursor is outside, the whole block renders as an HTML table; clicking in or entering with the arrow keys returns to source.
 import { Decoration, EditorView, WidgetType, keymap } from '@codemirror/view'
 import { Prec, StateField } from '@codemirror/state'
 import { syntaxTree } from '@codemirror/language'
@@ -61,7 +61,7 @@ class TableWidget extends WidgetType {
     )
     const wrap = document.createElement('div')
     wrap.className = 'nib-table-wrap'
-    // 结构照 Typora（thead / tbody、md-table），主题的表头和隔行样式才对得上。
+    // Structure follows Typora (thead / tbody, md-table) so theme header and zebra styles match.
     const table = document.createElement('table')
     table.className = 'md-table'
     const thead = document.createElement('thead')
@@ -89,7 +89,7 @@ class TableWidget extends WidgetType {
         links.open(link.dataset.href)
         return
       }
-      // 阅读时不进源码，留给系统做文字选择
+      // In read mode do not enter source; leave it to the system for text selection
       if (isReading) return
       event.preventDefault()
       const row = event.target.closest?.('tr')
@@ -138,7 +138,7 @@ const tableField = StateField.define({
   provide: (field) => EditorView.decorations.from(field),
 })
 
-/** 上下方向键本来会跳过整块表格；改成落进表格的首行或末行。 */
+/** Up/down arrows would normally skip the whole table; changed to land in the table's first or last row. */
 function enterTable(forward) {
   return (view) => {
     const { state } = view

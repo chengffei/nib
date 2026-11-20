@@ -1,12 +1,12 @@
 import AppKit
 
-/// Typora 主题：一个 .css 加一个同名文件夹（字体、图片）。
-/// 只从 Nib 自己的主题文件夹找；兼容的是 Typora 主题的格式，不读 Typora 软件的文件夹（11-19 Felix 定）。
+/// Typora theme: one .css plus a same-named folder (fonts, images).
+/// Only looked up in Nib's own theme folder; what is compatible is the Typora theme format, and Typora the app's folders are not read.
 enum TyporaThemes {
     struct Theme: Identifiable, Hashable {
         let url: URL
         var id: String { url.path }
-        /// 和 Typora 菜单里一样的叫法：github → Github，konayuki-dark → Konayuki Dark。
+        /// Same naming as in the Typora menu: github → Github, konayuki-dark → Konayuki Dark.
         var name: String {
             url.deletingPathExtension().lastPathComponent
                 .split(whereSeparator: { $0 == "-" || $0 == "_" })
@@ -20,7 +20,7 @@ enum TyporaThemes {
         return support.appendingPathComponent("Nib/themes", isDirectory: true)
     }
 
-    /// 主题文件夹里的主题。base.user.css 和 xxx.user.css 是 Typora 的用户覆盖，不算主题。
+    /// Themes in the theme folder. base.user.css and xxx.user.css are Typora user overrides, not themes.
     static func all() -> [Theme] {
         let files = (try? FileManager.default.contentsOfDirectory(at: nibFolder, includingPropertiesForKeys: nil)) ?? []
         return files
@@ -29,9 +29,22 @@ enum TyporaThemes {
             .map(Theme.init)
     }
 
-    /// 选中的主题是否在主题文件夹里；以前从 Typora 文件夹选的不再认。
+    /// Whether the selected theme is in the theme folder; themes previously selected from the Typora folder are no longer recognised.
     static func isInFolder(_ path: String) -> Bool {
         URL(fileURLWithPath: path).deletingLastPathComponent().standardizedFileURL.path == nibFolder.standardizedFileURL.path
+    }
+
+    @MainActor
+    /// Open the theme guide bundled with the app (docs/themes*.md). Copy it to the cache directory first and then open it, so edits made inside the app bundle are not lost.
+    static func openGuide() {
+        let zh = AppSettings.currentLanguage.hasPrefix("zh")
+        guard let src = Bundle.main.url(forResource: zh ? "themes.zh-Hans" : "themes", withExtension: "md", subdirectory: "docs") else { return }
+        let cache = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("Nib", isDirectory: true)
+        let dest = cache.appendingPathComponent(zh ? "Nib 主题说明.md" : "Nib Themes.md")
+        try? FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
+        try? FileManager.default.removeItem(at: dest)
+        guard (try? FileManager.default.copyItem(at: src, to: dest)) != nil else { return }
+        NSDocumentController.shared.openDocument(withContentsOf: dest, display: true) { _, _, _ in }
     }
 
     static func openFolder() {
@@ -39,8 +52,8 @@ enum TyporaThemes {
         NSWorkspace.shared.open(nibFolder)
     }
 
-    /// 读出能直接塞进网页的整份 CSS：展开 @import，把相对路径的 url() 换成网页能读的 nib-file 地址，
-    /// 末尾按 Typora 的规矩接上 base.user.css 和「主题名.user.css」。读不到返回 nil。
+    /// Read out the whole CSS that can be fed straight to the web page: expand @import, replace relative-path url() with nib-file addresses the page can read,
+    /// and append base.user.css and "themename.user.css" at the end by Typora's rules. Returns nil if unreadable.
     static func bundledCSS(path: String) -> String? {
         let url = URL(fileURLWithPath: path)
         guard var css = load(url, depth: 0) else { return nil }
@@ -61,7 +74,7 @@ enum TyporaThemes {
             if target.hasPrefix("http") { return "" }
             return load(folder.appendingPathComponent(target).standardizedFileURL, depth: depth + 1) ?? ""
         }
-        // url(...)：网络地址、data:、#id 保持不动，其余按 CSS 文件所在目录解析。
+        // url(...): network addresses, data: and #id are left alone; the rest resolve against the directory of the CSS file.
         css = replace(in: css, pattern: #"url\(\s*(["']?)([^"')]+)\1\s*\)"#) { match in
             let target = match[2].trimmingCharacters(in: .whitespaces)
             if target.hasPrefix("data:") || target.hasPrefix("http") || target.hasPrefix("#") || target.hasPrefix("nib-file:") {

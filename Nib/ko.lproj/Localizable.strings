@@ -59,10 +59,11 @@
 "Remember recent documents" = "최근 사용 문서 기억하기";
 "Reopen windows when Nib starts" = "시작할 때 윈도우 다시 열기";
 "Turning off recent documents also clears the existing list." = "최근 사용 문서 기억하기를 끄면 기존 목록도 지워집니다.";
-"Typora Theme" = "Typora 테마";
 "None" = "없음";
 "Open Themes Folder" = "테마 폴더 열기";
-"Typora themes supported." = "Typora 형식의 테마를 지원합니다. 테마 폴더에 넣으면 바로 사용할 수 있습니다.";
+"Custom" = "사용자 설정";
+"Add CSS themes to the themes folder. Typora themes work too." = "테마 CSS를 테마 폴더에 넣으면 사용할 수 있습니다. Typora 테마도 지원합니다.";
+"Writing Themes" = "테마 만들기";
 "Themes Folder…" = "테마 폴더…";
 
 /* 快捷键设置 */

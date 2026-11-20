@@ -1,4 +1,4 @@
-// Nib 编辑器内核：CodeMirror 6。文档就是文本本身，渲染全部是装饰层。
+// Nib editor core: CodeMirror 6. The document is the text itself; all rendering is a decoration layer.
 import { Annotation, Compartment, EditorSelection, EditorState } from '@codemirror/state'
 import { EditorView, keymap } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap, indentWithTab, redo, undo } from '@codemirror/commands'
@@ -49,7 +49,7 @@ const codeLanguages = [
   lang('swift', [], legacy(swift)),
 ]
 
-// YAML front matter：不处理的话，解析器会把它认成分割线加二级标题。
+// YAML front matter: left unhandled, the parser would read it as a thematic break plus a level-2 heading.
 const frontmatter = {
   defineNodes: [{ name: 'Frontmatter', block: true }],
   parseBlock: [
@@ -75,7 +75,7 @@ const frontmatter = {
   ],
 }
 
-// 粗体、斜体、删除线只给类名（带 class 的条目样式属性不生效），样式写在 style.css，套 Typora 主题时 typoraEdit.js 覆盖。
+// Bold, italic and strikethrough only get class names (style props on entries with a class have no effect); styles live in style.css, and typoraEdit.js overrides them under a Typora theme.
 const highlight = HighlightStyle.define([
   { tag: t.processingInstruction, color: 'var(--text3)' },
   { tag: [t.labelName, t.url], color: 'var(--text2)' },
@@ -90,7 +90,7 @@ const highlight = HighlightStyle.define([
   { tag: [t.function(t.variableName), t.function(t.propertyName), t.attributeName], color: 'var(--c-func)' },
 ])
 
-// ---- 与 Swift 外壳的桥 ----
+// ---- Bridge to the Swift shell ----
 
 const external = Annotation.define()
 let lineBreak = '\n'
@@ -111,14 +111,14 @@ function scheduleFlush() {
     pending = true
     queueMicrotask(flush)
   } else {
-    // 大文档每次按键都整篇传一遍太贵，停手 250 毫秒再传
+    // Sending the whole document on every keystroke is too costly for large files; wait until typing pauses for 250 ms
     pending = true
     clearTimeout(timer)
     timer = setTimeout(flush, 250)
   }
 }
 
-// ---- 命令 ----
+// ---- Commands ----
 
 function toggleWrap(mark) {
   return (view) => {
@@ -150,11 +150,11 @@ function toggleWrap(mark) {
   }
 }
 
-// ---- 偏好设置 ----
+// ---- Preferences ----
 
 let defaultMode = 'read'
 
-/** 外壳的 Settings 窗口改了什么都走这里：只改 CSS 变量和主题标记，不动文档。 */
+/** Every change from the shell's Settings window comes through here: it only touches CSS variables and theme markers, never the document. */
 function applySettings(s) {
   const root = document.documentElement
   const set = (name, value) => (value == null ? root.style.removeProperty(name) : root.style.setProperty(name, String(value)))
@@ -166,14 +166,14 @@ function applySettings(s) {
   set('--para', s.paragraphSpacing)
   defaultMode = ['edit', 'source'].includes(s.defaultMode) ? s.defaultMode : 'read'
   measureMono()
-  // Typora 主题自己定字号；Nib 的字号设置在阅读模式里按比例缩放整页。
+  // Typora themes set their own font size; Nib's font-size setting scales the whole page proportionally in read mode.
   reader.scroller.style.zoom = s.fontSize ? String(s.fontSize / 16) : ''
   if (typora.setCSS(s.typoraCSS)) syncReader()
   setFocusModes(typeof view !== 'undefined' ? view : null, { focus: s.focusMode, typewriter: s.typewriterMode })
   if (typeof view !== 'undefined') view.requestMeasure()
 }
 
-/** 量出等宽字体的实际字宽，列表悬挂缩进靠它对齐。 */
+/** Measures the actual character width of the monospace font; list hanging indents are aligned with it. */
 function measureMono() {
   const probe = document.createElement('span')
   probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;font-family:var(--mono);font-size:100px'
@@ -184,7 +184,7 @@ function measureMono() {
   if (width > 0.4 && width < 0.8) document.documentElement.style.setProperty('--mono-w', `${width}em`)
 }
 
-// 三种模式：read 整篇渲染且只读（默认）；edit 光标所在行露出源码；source 整篇等宽源码。
+// Three modes: read renders the whole document read-only (default); edit reveals source on the cursor line; source shows the whole document as monospace source.
 const previewPart = new Compartment()
 const readPart = new Compartment()
 const previewFor = (mode) => (mode === 'source' ? [] : [livePreview, tables])
@@ -206,7 +206,7 @@ function setMode(next) {
 const toggleEdit = () => setMode(mode === 'read' ? 'edit' : 'read')
 const toggleSource = () => setMode(mode === 'source' ? 'edit' : 'source')
 
-// ---- 链接 ----
+// ---- Links ----
 
 const slug = (text) =>
   text
@@ -215,7 +215,7 @@ const slug = (text) =>
     .replace(/[^\p{L}\p{N}\s-]/gu, '')
     .replace(/\s+/g, '-')
 
-/** 文内锚点 #标题：滚到对应标题。 */
+/** In-document anchor #heading: scroll to the matching heading. */
 function scrollToHeading(anchor) {
   let want
   try {
@@ -244,7 +244,7 @@ links.open = (href) => {
   else post({ type: 'open', url: href })
 }
 
-// ---- 启动 ----
+// ---- Startup ----
 
 
 function makeState(doc) {
@@ -272,7 +272,7 @@ function makeState(doc) {
       ]),
       EditorView.domEventHandlers({
         mousedown(event) {
-          // 阅读时单击即开链接；编辑时要按住 ⌘，否则没法把光标点进链接里
+          // In read mode a single click opens the link; in edit mode ⌘ must be held, otherwise the cursor could not be placed inside a link
           const link = (event.metaKey || mode === 'read') && event.target.closest?.('[data-href]')
           if (!link) return false
           links.open(link.dataset.href)
@@ -299,10 +299,10 @@ function makeState(doc) {
   })
 }
 
-// 选了 Typora 主题时，阅读模式换成 readView 渲染的 HTML，主题才能原样生效；编辑和源码模式照旧用 CodeMirror。
+// With a Typora theme selected, read mode switches to HTML rendered by readView so the theme applies as-is; edit and source modes still use CodeMirror.
 let reader = createReadView({ codeLanguages, resolveImage, openLink: (href) => links.open(href), attachScrollbar })
 let typora = createTyporaTheme({ post })
-// 字数统计：选了文字时另报选中部分。阅读层是普通网页，选区从 DOM 取。
+// Word count: when text is selected, the selection is reported separately. The read layer is a plain web page, so the selection comes from the DOM.
 const wordCounter = createWordCounter({
   post,
   getText: () => currentText(),
@@ -312,7 +312,7 @@ const wordCounter = createWordCounter({
     return state.selection.ranges.filter((r) => !r.empty).map((r) => state.sliceDoc(r.from, r.to)).join('\n')
   },
 })
-// 大纲：标题列表和当前读到的一节报给外壳。
+// Outline: the heading list and the section currently being read are reported to the shell.
 const outline = createOutline({ post, getView: () => view, reader })
 let trackFrame = 0
 document.addEventListener(
@@ -330,10 +330,10 @@ document.addEventListener('selectionchange', () => {
   if (reader.visible) wordCounter.schedule()
 })
 
-/** 当前正在显示、能滚动的那一层。 */
+/** The layer that is currently visible and scrollable. */
 const activeScroller = () => (reader.visible ? reader.scroller : view.scrollDOM)
 
-/** 按模式和主题决定阅读模式用哪一层；换层时按比例带过滚动位置。 */
+/** Picks the layer read mode uses based on mode and theme; when switching layers, the scroll position is carried over proportionally. */
 function syncReader() {
   if (typeof view === 'undefined') return
   const want = mode === 'read' && typora.active
@@ -361,14 +361,14 @@ function syncReader() {
 
 applySettings(window.__nibSettings || {})
 
-// 先建一个空编辑器：外壳会提前把它预热好，开文档时只需要 load 填内容。
+// Create an empty editor first: the shell pre-warms it, so opening a document only needs load to fill in the content.
 mode = 'edit'
 document.body.dataset.mode = mode
 const view = new EditorView({ parent: document.body, state: makeState('') })
 attachScrollbar(view.scrollDOM)
 
-/** 装入一篇文档：全新的状态（撤销历史清空），有内容进阅读，空文档进编辑。
- *  top 是从休眠回来时要恢复的滚动位置。 */
+/** Loads a document: fresh state (undo history cleared); a non-empty document opens in read mode, an empty one in edit mode.
+ *  top is the scroll position to restore when waking from hibernation. */
 function load(text, baseDir, top) {
   window.__nibBaseDir = baseDir || null
   lineBreak = text.includes('\r\n') ? '\r\n' : '\n'
@@ -386,7 +386,7 @@ function load(text, baseDir, top) {
     post({ type: 'ready', mode })
     return
   }
-  // 行高要等排版量过才准，隔两帧各设一次，再报就绪
+  // Line height is only accurate after layout has been measured: set it once on each of the next two frames, then report ready
   const restore = () => {
     activeScroller().scrollTop = top
   }
@@ -400,7 +400,7 @@ function load(text, baseDir, top) {
   })
 }
 
-// 阅读模式的键盘：空格翻页，方向键滚动，不用碰鼠标。
+// Read-mode keyboard: Space pages, arrow keys scroll, no mouse needed.
 window.addEventListener('keydown', (event) => {
   if (mode !== 'read' || event.ctrlKey || event.altKey) return
   if (event.target.closest?.('input, textarea, button')) return
@@ -427,8 +427,8 @@ window.addEventListener('keydown', (event) => {
 
 window.nib = {
   load,
-  /** 外部改动（磁盘上的文件被改写、Versions 回滚）才会调；不回传 change。
-   *  只替换变了的那一段，滚动位置不动；原本停在末尾的继续跟到末尾。 */
+  /** Only called for external changes (the file on disk rewritten, Versions rollback); does not echo a change back.
+   *  Replaces only the changed range and keeps the scroll position; a view that was at the end keeps following the end. */
   setText(text) {
     lineBreak = text.includes('\r\n') ? '\r\n' : '\n'
     const next = text.replace(/\r\n?/g, '\n')
@@ -455,7 +455,7 @@ window.nib = {
     }
     restore()
     requestAnimationFrame(restore)
-    // Typora 阅读层也跟着换内容，保持原来的滚动位置。
+    // The Typora read layer updates its content too, keeping the original scroll position.
     reader.invalidate()
     if (reader.visible) {
       const readTop = reader.scroller.scrollTop
@@ -464,7 +464,7 @@ window.nib = {
     }
   },
   getText: currentText,
-  /** 大纲面板里点了第 index 个标题。 */
+  /** The heading at position index was clicked in the outline panel. */
   gotoHeading: (index) => outline.go(index),
   undo: () => undo(view),
   redo: () => redo(view),
@@ -474,9 +474,9 @@ window.nib = {
   mode: () => mode,
   applySettings,
   find: () => (reader.visible ? reader.find() : openSearchPanel(view)),
-  /** 外壳休眠标签前要记滚动位置；阅读层和编辑器各有各的滚动。 */
+  /** The shell records the scroll position before hibernating a tab; the read layer and the editor each scroll independently. */
   scrollTop: () => activeScroller().scrollTop,
-  /** 文档另存或移动后，相对路径的图片要按新目录重新解析。 */
+  /** After the document is saved elsewhere or moved, relative image paths must be re-resolved against the new directory. */
   setBaseDir(dir) {
     window.__nibBaseDir = dir
     view.dispatch({ selection: view.state.selection })
@@ -484,11 +484,11 @@ window.nib = {
   view,
 }
 
-// scripts/webcheck.swift 走这条：正文在页面加载前就注入好了。正式的 app 等外壳来调 load。
+// scripts/webcheck.swift uses this path: the body is injected before the page loads. The real app waits for the shell to call load.
 if (typeof window.__nibInitialText === 'string') load(window.__nibInitialText, window.__nibBaseDir)
 else post({ type: 'boot', ms: Math.round(performance.now()) })
 
-// 按住 ⌘ 时链接显示下划线，提示可点；松开、切走窗口即消失
+// While ⌘ is held, links show an underline to signal they are clickable; it disappears on release or when the window loses focus
 const setCmd = (on) => document.body.classList.toggle('nib-cmd', on)
 window.addEventListener('keydown', (event) => setCmd(event.metaKey), true)
 window.addEventListener('keyup', (event) => setCmd(event.metaKey), true)

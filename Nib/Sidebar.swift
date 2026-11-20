@@ -1,10 +1,10 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// 文件树侧栏（需求 S2：每周浏览一个文件夹里的 md）。
-/// 工作区为空时根目录跟着当前文档所在文件夹走；工作区里加了文件夹就按文件夹分节（见 FileSidebar）。
-/// 点 md 在当前标签组里打开（已经开着就切过去）；别的文件灰显，双击交给系统默认程序。
-/// 新建、改名、移到废纸篓、在访达中显示、拷贝路径在右键里。拖动移动没做。
+/// File tree sidebar (requirement S2: browse the md files in a folder every week).
+/// When the workspace is empty the root follows the folder of the current document; once folders are added to the workspace it is split into sections by folder (see FileSidebar).
+/// Clicking an md opens it in the current tab group (switching to it if already open); other files are greyed out, and double-click hands them to the system default app.
+/// New, rename, move to Trash, reveal in Finder and copy path are in the context menu. Drag-to-move is not done.
 @MainActor
 final class FileTree: ObservableObject {
     struct Entry: Identifiable, Hashable {
@@ -20,7 +20,7 @@ final class FileTree: ObservableObject {
     private var observer: NSObjectProtocol?
 
     init() {
-        // 回到 Nib 时重读一遍：在访达或终端里改了文件，侧栏跟上。
+        // Re-read when returning to Nib: if files changed in Finder or the terminal, the sidebar catches up.
         observer = NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.reload() }
         }
@@ -33,14 +33,14 @@ final class FileTree: ObservableObject {
         return list
     }
 
-    /// 重读已经展开过的文件夹，展开状态不变。
+    /// Re-read the folders already expanded, leaving the expanded state unchanged.
     func reload() {
         var next: [URL: [Entry]] = [:]
         for folder in children.keys where FileManager.default.fileExists(atPath: folder.path) { next[folder] = Self.list(folder) }
         children = next
     }
 
-    /// 工作区各节默认展开，收起的记在这里。
+    /// Workspace sections are expanded by default; the collapsed ones are recorded here.
     @Published var collapsedRoots = Set<URL>()
 
     func isRootExpanded(_ url: URL) -> Binding<Bool> {
@@ -68,7 +68,7 @@ final class FileTree: ObservableObject {
         }
     }
 
-    // MARK: 文件操作
+    // MARK: File operations
 
     func open(_ entry: Entry) {
         if entry.isFolder {
@@ -82,7 +82,7 @@ final class FileTree: ObservableObject {
         }
     }
 
-    /// 在文件夹里建一篇「未命名.md」（重名往后加数字）并打开，改名点标题栏上的文件名。
+    /// Create an "Untitled.md" in the folder (adding a number if the name is taken) and open it; to rename, click the file name on the title bar.
     func newFile(in folder: URL) {
         let base = String(localized: "Untitled")
         var url = folder.appendingPathComponent("\(base).md")
@@ -118,7 +118,7 @@ final class FileTree: ObservableObject {
         }
     }
 
-    /// 改名：开着的文档走 NSDocument（标签、最近使用一起更新），没开的直接改文件。
+    /// Rename: an open document goes through NSDocument (tab and recents update together); one that is not open has its file renamed directly.
     func rename(_ entry: Entry, in window: NSWindow?) {
         let alert = NSAlert()
         alert.messageText = String(localized: "Rename “\(entry.name)”")
@@ -133,7 +133,7 @@ final class FileTree: ObservableObject {
             self?.applyRename(entry, to: field.stringValue)
         }
         if let window { alert.beginSheetModal(for: window, completionHandler: finish) } else { finish(alert.runModal()) }
-        // 和访达一样先选中不含扩展名的部分。
+        // Like Finder, first select the part without the extension.
         DispatchQueue.main.async {
             let base = entry.isFolder ? entry.name : (entry.name as NSString).deletingPathExtension
             field.currentEditor()?.selectedRange = NSRange(location: 0, length: (base as NSString).length)
@@ -159,7 +159,7 @@ final class FileTree: ObservableObject {
         }
     }
 
-    /// 移到废纸篓（可在访达里放回，所以不再确认）。开着且有未保存改动的文档不动，先让用户自己处理。
+    /// Move to Trash (can be put back in Finder, so no confirmation). Open documents with unsaved changes are left alone, so the user can deal with them first.
     func trash(_ entry: Entry) {
         if let document = NSDocumentController.shared.document(for: entry.url) {
             if document.isDocumentEdited {
@@ -180,8 +180,8 @@ final class FileTree: ObservableObject {
     }
 }
 
-/// 侧栏本体。照 VS Code 的多根工作区：工作区里加了文件夹，就按文件夹分节列出（每节可折叠）；
-/// 工作区为空时只列当前文档所在的文件夹。加文件夹：顶上菜单「将文件夹添加到工作区…」，或从访达把文件夹拖进侧栏。
+/// The sidebar itself. Like VS Code multi-root workspaces: once folders are added to the workspace it lists them as sections by folder (each collapsible);
+/// when the workspace is empty it lists only the folder of the current document. To add a folder: the "Add Folder to Workspace…" menu at the top, or drag a folder from Finder into the sidebar.
 struct FileSidebar: View {
     let documentURL: URL?
     @ObservedObject var tree: FileTree
@@ -235,7 +235,7 @@ struct FileSidebar: View {
         .onChange(of: documentURL) { revealCurrent() }
     }
 
-    /// 顶上一行：工作区名或当前文件夹名，点开是工作区菜单。
+    /// Top row: the workspace name or current folder name; clicking opens the workspace menu.
     private var header: some View {
         Menu {
             Button("Add Folder to Workspace…", action: addFolder)
@@ -316,7 +316,7 @@ struct FileSidebar: View {
         if let window { panel.beginSheetModal(for: window, completionHandler: done) } else { done(panel.runModal()) }
     }
 
-    /// 从访达拖进来的文件夹加进工作区；拖进来的是文件就打开它。
+    /// A folder dragged in from Finder is added to the workspace; if a file is dragged in, open it.
     private func dropFolders(_ providers: [NSItemProvider]) -> Bool {
         for provider in providers {
             _ = provider.loadObject(ofClass: URL.self) { url, _ in
@@ -332,14 +332,14 @@ struct FileSidebar: View {
         return true
     }
 
-    /// 当前文档在哪个根下面，就把它到根之间的文件夹展开，当前文档看得见。
+    /// Whichever root the current document is under, expand the folders between it and the root so the current document is visible.
     private func revealCurrent() {
         guard let documentURL else { return }
         let roots = workspace.isEmpty ? [documentFolder].compactMap { $0 } : workspace
         for root in roots { tree.expanded.formUnion(Self.ancestors(of: documentURL, below: root)) }
     }
 
-    /// 当前文档到根目录之间的各级文件夹。
+    /// The folders at each level between the current document and the root.
     static func ancestors(of url: URL, below root: URL?) -> [URL] {
         guard let root else { return [] }
         var out: [URL] = []
@@ -413,7 +413,7 @@ private struct FileRow: View {
     }
 }
 
-/// 侧栏右边的分隔线，拖动改宽度（180 到 420 点），宽度记住。
+/// The divider on the right of the sidebar; dragging changes the width (180 to 420 pt) and the width is remembered.
 struct SidebarDivider: View {
     @ObservedObject private var settings = AppSettings.shared
     @State private var start: Double?
@@ -438,7 +438,7 @@ struct SidebarDivider: View {
     }
 }
 
-/// 取所在窗口，给弹出的面板挂成表单。
+/// Get the containing window, to attach the presented panel as a sheet.
 private struct WindowReader: NSViewRepresentable {
     @Binding var window: NSWindow?
     func makeNSView(context: Context) -> NSView {

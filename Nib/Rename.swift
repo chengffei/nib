@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// 标签上改文件名：双击标签或右键「重新命名…」。
-/// 已存盘的文档原地改名（走 NSDocument.move，文件协调、最近使用、窗口标题都跟着更新）；
-/// 没存过的「未命名」没有文件可改，按新名字弹出存储面板。
+/// Rename a file from its tab: double-click the tab or right-click "Rename…".
+/// A saved document is renamed in place (via NSDocument.move, so file coordination, recents and the window title all update);
+/// an unsaved "Untitled" has no file to rename, so a save panel is presented with the new name.
 @MainActor
 enum DocumentRename {
     static func rename(_ window: NSWindow, to input: String) {
@@ -13,17 +13,17 @@ enum DocumentRename {
             return
         }
         guard let url = document.fileURL else {
-            // 未命名：存储面板默认用显示名作文件名。
+            // Untitled: the save panel uses the display name as the file name by default.
             if (name as NSString).pathExtension.isEmpty { name += ".md" }
             document.displayName = name
             document.save(nil)
             return
         }
-        // 没写扩展名就沿用原来的，免得改完变成别的程序打开的文件。
+        // If no extension is given, keep the original, so renaming does not turn the file into one opened by another program.
         if (name as NSString).pathExtension.isEmpty, !url.pathExtension.isEmpty { name += "." + url.pathExtension }
         guard name != url.lastPathComponent else { return }
         let target = url.deletingLastPathComponent().appendingPathComponent(name)
-        // 只改大小写时目标在不区分大小写的磁盘上「已存在」，其实是同一个文件，放行。
+        // When only the case changes, the target "exists" on a case-insensitive disk but is the same file; allow it.
         let sameFile = target.path.lowercased() == url.path.lowercased()
         if FileManager.default.fileExists(atPath: target.path), !sameFile {
             let alert = NSAlert()
@@ -39,7 +39,7 @@ enum DocumentRename {
     }
 }
 
-/// 改名输入框：一出现就聚焦并选中不含扩展名的部分（和访达一样）。回车确认，Esc 或点别处放弃。
+/// Rename text field: focuses as soon as it appears and selects the part without the extension (like Finder). Return confirms; Esc or clicking elsewhere abandons.
 struct RenameField: NSViewRepresentable {
     let initial: String
     let finish: (String?) -> Void
@@ -56,9 +56,9 @@ struct RenameField: NSViewRepresentable {
         field.lineBreakMode = .byTruncatingMiddle
         field.cell?.isScrollable = true
         field.delegate = context.coordinator
-        // 双击的第二下松开时会落到刚出现的输入框上、把选区改成光标，等它过去再选。
+        // The second click of a double-click lands on the just-appeared text field on release and turns the selection into a caret; wait for it to pass, then select.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-            // 同一组的每个窗口都有一条标签条，只在屏幕上那个里接管键盘。
+            // Every window in the same group has a tab strip; only the one on screen takes over the keyboard.
             guard let window = field.window, window.isVisible, window.makeFirstResponder(field) else { return }
             context.coordinator.focused = true
             let base = (initial as NSString).deletingPathExtension
@@ -91,7 +91,7 @@ struct RenameField: NSViewRepresentable {
             return false
         }
 
-        /// 点到别处失去焦点：放弃，不偷偷改名。
+        /// Focus lost by clicking elsewhere: abandon, do not rename silently.
         func controlTextDidEndEditing(_ obj: Notification) { if focused { end(nil) } }
 
         private func end(_ value: String?) {

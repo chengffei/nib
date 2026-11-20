@@ -59,10 +59,11 @@
 "Remember recent documents" = "Zuletzt benutzte Dokumente merken";
 "Reopen windows when Nib starts" = "Fenster beim Start von Nib wieder öffnen";
 "Turning off recent documents also clears the existing list." = "Beim Ausschalten wird auch die bestehende Liste gelöscht.";
-"Typora Theme" = "Typora-Thema";
 "None" = "Ohne";
 "Open Themes Folder" = "Themenordner öffnen";
-"Typora themes supported." = "Unterstützt Themes im Typora-Format. Lege sie einfach in den Themenordner.";
+"Custom" = "Eigene";
+"Add CSS themes to the themes folder. Typora themes work too." = "Lege CSS-Themes in den Themenordner. Typora-Themes funktionieren ebenfalls.";
+"Writing Themes" = "Themes erstellen";
 "Themes Folder…" = "Themenordner …";
 
 /* 快捷键设置 */

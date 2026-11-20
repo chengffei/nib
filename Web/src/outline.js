@@ -1,5 +1,5 @@
-// 大纲：从语法树取标题（代码块里的 # 不算），报给外壳画在标题栏的大纲面板里；
-// 滚动时报当前读到哪一节；面板里点一项，滚到那个标题。阅读层（Typora 主题）按第几个标题对应。
+// Outline: takes headings from the syntax tree (a # inside a code block does not count) and reports them to the shell, which draws them in the title bar's outline panel;
+// on scroll it reports the section currently being read; clicking an item in the panel scrolls to that heading. The read layer (Typora theme) maps by heading index.
 import { ensureSyntaxTree } from '@codemirror/language'
 import { EditorView } from '@codemirror/view'
 
@@ -22,7 +22,7 @@ export function headings(state) {
   return out
 }
 
-/** 标题里的行内标记去掉，只留文字。 */
+/** Strips inline markup from a heading, leaving only the text. */
 function plain(text) {
   return text
     .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
@@ -47,7 +47,7 @@ export function createOutline({ post, getView, reader }) {
     track()
   }
 
-  /** 当前一节：视口顶部往下一点之前的最后一个标题。 */
+  /** Current section: the last heading before a point slightly below the top of the viewport. */
   function track() {
     let index = -1
     if (reader.visible) {
@@ -80,7 +80,7 @@ export function createOutline({ post, getView, reader }) {
       report()
     },
     track,
-    /** 滚到第 index 个标题，标题停在视口上方留一点空。 */
+    /** Scrolls to the heading at position index, leaving a small gap above it in the viewport. */
     go(index) {
       if (reader.visible) {
         const nodes = reader.scroller.querySelectorAll('#write h1, #write h2, #write h3, #write h4, #write h5, #write h6')

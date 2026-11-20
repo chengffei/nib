@@ -7,7 +7,7 @@ struct NibApp: App {
     static let debug = ProcessInfo.processInfo.environment["NIB_DEBUG"] != nil
     @MainActor static var evalOnce = debug ? ProcessInfo.processInfo.environment["NIB_EVAL"] : nil
 
-    /// 调试输出，只在 NIB_DEBUG 下写到标准错误。
+    /// Debug output, written to standard error only under NIB_DEBUG.
     static func log(_ message: @autoclosure () -> String) {
         guard debug else { return }
         FileHandle.standardError.write(Data("NIB \(Int(Date().timeIntervalSince1970 * 1000)) \(message())\n".utf8))
@@ -16,25 +16,25 @@ struct NibApp: App {
     init() {
         _ = Self.launchedAt
         Self.log("app init")
-        // 标签由 WindowTabs 自己管，系统标签组关掉；清掉以前写的「总是合并成标签页」。
+        // Tabs are managed by WindowTabs, so system tab groups are turned off; clear the previously written "always merge into tabs".
         UserDefaults.standard.removeObject(forKey: "AppleWindowTabbingMode")
-        // 最近打开、启动时恢复窗口都按设置来（默认记最近打开、不恢复窗口）。
-        // 这时还不能碰 NSDocumentController：SwiftUI 要自己先建它，抢先建了启动就崩（11-16 关掉最近打开后每次启动都崩）。
-        // 最近打开的清理放到启动完成之后（AppDelegate）。
+        // Recents and window restoration at launch follow the settings (by default record recents, do not restore windows).
+        // NSDocumentController must not be touched yet: SwiftUI needs to create it first, and creating it earlier crashes at launch.
+        // Clearing recents is done after launch finishes (AppDelegate).
         AppSettings.applyHistory(touchRecents: false)
-        // 趁 SwiftUI 还在搭窗口，先把编辑器内核加载起来。
+        // While SwiftUI is still building windows, load the editor engine first.
         EditorPool.shared.prewarm()
-        // 主题决定窗口深浅色；NSApp 这时还没建好，等一拍再设。
+        // The theme decides the window's light/dark; NSApp is not ready yet, so set it a tick later.
         DispatchQueue.main.async { AppSettings.shared.apply() }
     }
 
     var body: some Scene {
-        // DocumentGroup 在 macOS 上由 NSDocument 驱动：自动保存、Versions、窗口标签页、Open Recent 全部白送。
+        // On macOS DocumentGroup is driven by NSDocument: autosave, Versions, window tabs and Open Recent all come for free.
         DocumentGroup(newDocument: MarkdownDocument()) { file in
             DocumentView(text: file.$document.text, fileURL: file.fileURL)
         }
         .defaultSize(width: 860, height: 900)
-        // 不显示窗口标题，工具栏压成紧凑高度；文件名看标签页。
+        // No window title, toolbar compressed to compact height; the file name is read from the tab.
         .windowToolbarStyle(.unifiedCompact(showsTitle: false))
         .commands { EditorCommands() }
 
@@ -42,7 +42,7 @@ struct NibApp: App {
     }
 }
 
-/// 最后一个文档窗口关掉就退出，不留空跑的 app。
+/// Quit when the last document window closes, rather than leaving an idle app running.
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 
@@ -51,16 +51,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-/// 菜单命令发给当前窗口的编辑器。撤销重做不用 SwiftUI 自带的：那套走文档的 UndoManager，管不到网页里的编辑历史。
+/// Menu commands go to the editor of the current window. Undo and redo do not use SwiftUI's built-in ones: those go through the document's UndoManager, which cannot reach the edit history in the web page.
 struct EditorCommands: Commands {
-    // FocusedObject 会跟着 controller 的 mode 变化刷新菜单，勾选状态才对。
+    // FocusedObject refreshes the menu as the controller's mode changes, so the checkmarks are correct.
     @FocusedObject private var controller: EditorController?
-    /// 快捷键可在设置里改，改了菜单跟着刷新。
+    /// Shortcuts can be changed in Settings; the menu refreshes accordingly.
     @ObservedObject private var shortcuts = ShortcutStore.shared
     @ObservedObject private var settings = AppSettings.shared
 
     var body: some Commands {
-        // ⌘T 和浏览器一样开新标签：新文档窗口会被 WindowTabs 并进当前组。⌘N 照旧。
+        // ⌘T opens a new tab like a browser: the new document window is merged into the current group by WindowTabs. ⌘N is unchanged.
         CommandGroup(after: .newItem) {
             Button("New Tab") { NSDocumentController.shared.newDocument(nil) }
                 .keyboardShortcut(shortcuts.shortcut("New Tab"))
@@ -76,8 +76,8 @@ struct EditorCommands: Commands {
             item("Find…", "nib.find()", icon: "magnifyingglass")
         }
         CommandGroup(before: .toolbar) {
-            // 三种模式做成带勾的菜单项，当前模式打勾（HIG：有状态的命令显示状态，不用「切换」这种说不清方向的名字）。
-            // 常用项带图标，照 macOS 26 系统菜单和 Typora。
+            // The three modes are checkable menu items, with the current mode ticked (HIG: stateful commands show their state, instead of a name like "Toggle" whose direction is unclear).
+            // Common items carry icons, following the macOS 26 system menus and Typora.
             modeItem("Read", .read, icon: "book") { controller?.setMode(.read) }
             modeItem("Editing", .edit, icon: "square.and.pencil") { controller?.run("nib.toggleEdit()") }
             modeItem("Source Mode", .source, icon: "chevron.left.forwardslash.chevron.right") { controller?.run("nib.toggleSource()") }
@@ -99,13 +99,13 @@ struct EditorCommands: Commands {
             Divider()
         }
         CommandGroup(before: .windowList) {
-            // 和 Safari 一样：前后切换放在窗口菜单里（⇧⌘[ ]；⌃⇥ 会被网页视图当成焦点切换吃掉，实测不触发），⌘1 到 ⌘9 收进子菜单，不把窗口菜单撑长。
+            // Like Safari: previous/next switching lives in the Window menu (⇧⌘[ ]; ⌃⇥ is swallowed by the web view as a focus change and was observed not to fire), and ⌘1 to ⌘9 go into a submenu so the Window menu does not grow long.
             Button("Show Previous Tab") { WindowTabs.shared.selectAdjacent(-1) }
                 .keyboardShortcut(shortcuts.shortcut("Show Previous Tab"))
             Button("Show Next Tab") { WindowTabs.shared.selectAdjacent(1) }
                 .keyboardShortcut(shortcuts.shortcut("Show Next Tab"))
             Menu("Go to Tab") {
-                // ⌘1 到 ⌘8 按位置切标签，⌘9 固定去最后一个。两个标题分开写：三目运算会让它们变成普通字符串，不走本地化。
+                // ⌘1 to ⌘8 switch tabs by position, ⌘9 always goes to the last. The two titles are written separately: a ternary would turn them into plain strings that skip localization.
                 ForEach(1...9, id: \.self) { number in
                     Group {
                         if number == 9 { Button("Show Last Tab") { Self.selectTab(number) } }
@@ -123,7 +123,7 @@ struct EditorCommands: Commands {
         WindowTabs.shared.select(number: number)
     }
 
-    /// title 是英文菜单标题，既是本地化 key 也是快捷键设置的 key。
+    /// title is the English menu title, both the localization key and the key of the shortcut setting.
     private func modeItem(_ title: String, _ mode: EditorMode, icon: String, action: @escaping () -> Void) -> some View {
         Toggle(isOn: Binding(get: { controller?.mode == mode }, set: { _ in action() })) {
             Label(LocalizedStringKey(title), systemImage: icon)
@@ -132,7 +132,7 @@ struct EditorCommands: Commands {
         .disabled(controller == nil)
     }
 
-    /// 存在设置里的开关（专注、打字机、侧栏），所有窗口一起变。
+    /// Switches stored in settings (focus, typewriter, sidebar); all windows change together.
     private func settingToggle(_ title: String, icon: String, isOn: Binding<Bool>) -> some View {
         Toggle(isOn: isOn) { Label(LocalizedStringKey(title), systemImage: icon) }
             .keyboardShortcut(shortcuts.shortcut(title))
@@ -169,12 +169,12 @@ struct DocumentView: View {
             .focusedSceneObject(controller)
             .task(id: fileURL) { controller.watch(fileURL) }
             .toolbar(removing: .title)
-            // 工具栏不画自己的底色，露出窗口底色（= 正文底色，见 AppSettings.applyChrome），顶部和正文一个颜色。
+            // The toolbar draws no background of its own, letting the window background show (= body background, see AppSettings.applyChrome), so the top and the body are one colour.
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
             .toolbar {
-                // 工具栏里只放一个看不见的占位，撑出标题栏高度；标签条和模式切换都挂在标题栏上（见 TabStripInstaller），
-                // 放在工具栏里窗口一窄就会被收进「»」。
-                // 占位项不能带系统给工具栏项加的玻璃底，不然窗口正中会多出一道竖线（11-17 Felix 反馈）。
+                // Only an invisible placeholder goes in the toolbar, to hold up the title-bar height; the tab strip and mode switch hang on the title bar (see TabStripInstaller),
+                // since in the toolbar they would be collapsed into "»" when the window narrows.
+                // The placeholder must not carry the glass background the system adds to toolbar items, otherwise a vertical line appears in the middle of the window.
                 if #available(macOS 26, *) {
                     ToolbarItem(placement: .principal) { Color.clear.frame(width: 1, height: 1) }
                         .sharedBackgroundVisibility(.hidden)

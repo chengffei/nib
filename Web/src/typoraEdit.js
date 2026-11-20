@@ -1,8 +1,8 @@
-// 编辑模式也套 Typora 主题（11-19 Felix 定，方案 A）。
-// 主题 CSS 是按 Typora 的 DOM 写的（#write h1、blockquote > p、figure > table……），CodeMirror 的行结构对不上，
-// 选择器改写覆盖不全。这里换个做法：在 #write 里摆一份样例，让主题原样排版，再把量到的计算样式搬到编辑器对应的行和标记上。
-// 主题怎么写都无所谓，只要排出来是什么样，编辑模式就照着什么样。
-// 块之间的距离也是量出来的（含外边距合并），写成相邻行的上内边距；块之间的空行压成这段距离的高度。
+// Edit mode also applies the Typora theme.
+// Theme CSS is written for Typora's DOM (#write h1, blockquote > p, figure > table, ...), which CodeMirror's line structure does not match,
+// and rewriting selectors cannot cover everything. Instead: place a sample inside #write, let the theme lay it out unchanged, then copy the measured computed styles onto the matching editor lines and marks.
+// How the theme is written does not matter; edit mode simply mirrors whatever it renders.
+// Block spacing is measured too (including margin collapsing) and applied as top padding on the adjacent line; blank lines between blocks are squeezed to that height.
 
 const BLOCKS = {
   p: { html: '<p>x</p>', el: (n) => n, first: '.nib-p-first', last: '.nib-p-last', all: '.nib-p' },
@@ -39,7 +39,7 @@ const px = (v) => parseFloat(v) || 0
 const isClear = (c) => !c || c === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(c)
 const em = (value, fs) => `${+(value / fs).toFixed(4)}em`
 
-/** 长度换成相对本元素字号的 em，跟着 Nib 的字号设置一起缩放。 */
+/** Converts a length to em relative to this element's font size, so it scales with Nib's font-size setting. */
 function lengths(value, fs) {
   return value.replace(/(-?\d*\.?\d+)px/g, (_, n) => em(parseFloat(n), fs))
 }
@@ -76,13 +76,13 @@ export function deriveEditCSS(write) {
   const css = []
   const S = 'body.typora-active.nib-themed-edit:not([data-mode="source"])'
 
-  // 整体：字号按主题基准换算（Nib 字号设置照旧生效），字体、行高、文字色取正文段落。
+  // Overall: font size is converted from the theme baseline (Nib's font-size setting still applies); font, line height and text colour come from the body paragraph.
   host.innerHTML = '<p>x</p>'
   const pCs = getComputedStyle(host.firstChild)
   css.push(`${S} .cm-editor { font-size: calc(var(--fs) * ${+(baseFs / 16).toFixed(4)}); }`)
   css.push(`${S} .cm-scroller { ${textRules(pCs, baseFs, false).filter((r) => !r.startsWith('text-align')).join('; ')}; }`)
 
-  // 每种块：文字样式、盒子（底色、边框、圆角、内边距），以及 ::before / ::after 装饰。
+  // Each block type: text style, box (background, border, radius, padding), and ::before / ::after decorations.
   const sizes = {}
   for (const [type, b] of Object.entries(BLOCKS)) {
     host.innerHTML = b.html
@@ -107,7 +107,7 @@ export function deriveEditCSS(write) {
     rules.push(`border-left: ${l || 'none'}; border-right: ${r || 'none'}`)
     if (type === 'quote') rules.push('background-clip: padding-box')
     css.push(`${all} { ${rules.join('; ')}; position: relative; }`)
-    // 多行块：上边框、上圆角、上内边距落在首行，下面的落在末行。
+    // Multi-line blocks: the top border, top radius and top padding go on the first line, the bottom ones on the last line.
     const radius = box.borderRadius
     const t = border(box, 'top', fs)
     const btm = border(box, 'bottom', fs)
@@ -132,7 +132,7 @@ export function deriveEditCSS(write) {
     }
   }
 
-  // 块之间的距离：样例两两排在一起量，外边距合并照算。紧挨着的写成后一块的上内边距，中间隔着空行的把空行压成这个高度。
+  // Block spacing: samples are laid out in pairs and measured, with margin collapsing included. Adjacent blocks use it as the later block's top padding; where a blank line separates them, the blank line is squeezed to this height.
   const types = Object.keys(BLOCKS)
   host.innerHTML = types.flatMap((a) => types.map((b) => BLOCKS[a].html + BLOCKS[b].html)).join('')
   const kids = [...host.children]
@@ -155,7 +155,7 @@ export function deriveEditCSS(write) {
   }
   css.push(`${S} .cm-content .nib-table-wrap { padding-bottom: 0; }`)
 
-  // 列表项之间的距离（主题常给 li 或 li > p 上下外边距）。
+  // Spacing between list items (themes often put vertical margins on li or li > p).
   host.innerHTML = '<ul><li class="md-list-item"><p>x</p></li><li class="md-list-item"><p>x</p></li></ul>'
   const [li1, li2] = host.querySelectorAll('li')
   const liGap = Math.max(0, li2.getBoundingClientRect().top - li1.getBoundingClientRect().bottom)
@@ -163,7 +163,7 @@ export function deriveEditCSS(write) {
   const liInner = Math.max(0, liP.top - li1.getBoundingClientRect().top) + Math.max(0, li1.getBoundingClientRect().bottom - liP.bottom)
   css.push(`${S} .cm-content .cm-line.nib-li + .cm-line.nib-li { padding-top: ${em(liGap + liInner, sizes.list.fs)}; }`)
 
-  // 行内：粗体、斜体、删除线、链接、行内代码。
+  // Inline: bold, italic, strikethrough, links, inline code.
   host.innerHTML = '<p><strong>s</strong><em>e</em><del>d</del><a href="#">l</a><code>c</code></p>'
   const p = host.firstChild
   const inline = (sel, el, extra = []) => {
@@ -181,7 +181,7 @@ export function deriveEditCSS(write) {
   inline('.nib-code', code, ['background-color', 'border-top', 'border-right', 'border-bottom', 'border-left', 'border-radius', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left'])
   css.push(`${S} .cm-content .nib-code { font-size: ${+(px(codeCs.fontSize) / px(pCs.fontSize)).toFixed(4)}em; }`)
 
-  // 代码块里的语法色：主题按 CodeMirror 5 的类名上色，换成 Nib 的颜色变量。
+  // Syntax colours in code blocks: themes colour by CodeMirror 5 class names; these are mapped to Nib's colour variables.
   host.innerHTML = BLOCKS.fence.html
   const colorOf = (cls) => {
     const el = host.querySelector(`.${cls}`)
@@ -190,14 +190,14 @@ export function deriveEditCSS(write) {
   const vars = { keyword: 'cm-keyword', string: 'cm-string', comment: 'cm-comment', number: 'cm-number', type: 'cm-type', func: 'cm-def' }
   css.push(`${S} { ${Object.entries(vars).map(([k, cls]) => `--c-${k}: ${colorOf(cls)}`).join('; ')}; }`)
 
-  // 分隔线。
+  // Thematic break.
   host.innerHTML = '<hr>'
   const hr = getComputedStyle(host.firstChild)
   const hrTop = border(hr, 'top', baseFs)
   const hrHeight = px(hr.height)
   css.push(`${S} .cm-content .nib-hr { height: ${hrHeight ? em(hrHeight, baseFs) : '0'}; background: ${isClear(hr.backgroundColor) ? 'transparent' : hr.backgroundColor}${hr.backgroundImage !== 'none' ? `; background-image: ${hr.backgroundImage}` : ''}; border-top: ${hrTop || 'none'}; }`)
 
-  // 表格：表头、单元格、隔行底色、外框。
+  // Tables: header, cells, zebra background, outer border.
   host.innerHTML = BLOCKS.table.html
   const table = host.querySelector('table')
   const th = host.querySelector('th')

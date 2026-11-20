@@ -1,7 +1,7 @@
-// 仿 macOS 浮动滚动条：平时不显示，滚动或鼠标移到右边缘时淡入，停下约 1 秒后淡出；内容不够一屏时永远不出现。
-// WebKit 自带的滚动条跟随系统设置，接了鼠标就变成常驻的粗条，所以藏掉原生的，自己画一条。
+// macOS-style floating scrollbar: hidden normally, fades in on scroll or when the mouse nears the right edge, and fades out about 1 second after stopping; never appears when the content fits on one screen.
+// WebKit's native scrollbar follows the system setting and becomes a permanent thick bar when a mouse is attached, so the native one is hidden and a custom one is drawn.
 
-const PAD = 2 // 滑块离上下边的距离
+const PAD = 2 // gap between the thumb and the top/bottom edges
 const MIN_THUMB = 32
 const HIDE_AFTER = 1000
 
@@ -65,7 +65,7 @@ export function attachScrollbar(scroller) {
     show()
   })
 
-  // 拖滑块：按住时的位移换算成滚动距离。
+  // Dragging the thumb: converts the displacement while held into a scroll distance.
   thumb.addEventListener('mousedown', (event) => {
     event.preventDefault()
     event.stopPropagation()
@@ -85,7 +85,7 @@ export function attachScrollbar(scroller) {
     show()
   })
 
-  // 点轨道空白处：朝那个方向翻一页，和系统一致。
+  // Clicking empty track: page in that direction, as the system does.
   bar.addEventListener('mousedown', (event) => {
     if (event.target !== bar) return
     event.preventDefault()
@@ -94,7 +94,7 @@ export function attachScrollbar(scroller) {
     scroller.scrollBy({ top: event.clientY < thumbTop ? -page : page, behavior: 'smooth' })
   })
 
-  // 内容或窗口高度变了，滑块大小跟着变；不因此显示出来。
+  // When content or window height changes, the thumb resizes with it, without becoming visible.
   new ResizeObserver(layout).observe(scroller)
   const content = scroller.querySelector('.cm-content')
   if (content) new ResizeObserver(layout).observe(content)

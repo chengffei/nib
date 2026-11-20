@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 一段文字的统计，口径见 Web/src/wordCount.js（照 Typora：一个汉字算一个词，词数不算 Markdown 符号）。
+/// Statistics for a piece of text; the counting rules are in Web/src/wordCount.js (like Typora: one Chinese character counts as one word, and Markdown symbols are not counted).
 struct TextStats: Equatable {
     var words = 0
     var chars = 0
@@ -14,7 +14,7 @@ struct TextStats: Equatable {
         lines = body["lines"] as? Int ?? 0
     }
 
-    /// 阅读时间（分钟），不足一分钟按一分钟。
+    /// Reading time in minutes, rounded up to one minute at least.
     func minutes(speed: Int) -> Int {
         words == 0 ? 0 : max(1, Int((Double(words) / Double(max(speed, 1))).rounded()))
     }
@@ -42,7 +42,7 @@ enum WordCountUnit: String, CaseIterable, Identifiable {
         }
     }
 
-    /// 按钮上的「5765 词」。四个分开写才走本地化。
+    /// The "5765 words" on the button. The four are written separately so that they go through localization.
     func label(_ n: Int) -> Text {
         switch self {
         case .words: Text("\(n) words")
@@ -53,8 +53,8 @@ enum WordCountUnit: String, CaseIterable, Identifiable {
     }
 }
 
-/// 标题栏右侧的字数按钮：显示选定的一项，选中文字时显示选中部分（强调色）；点开列出全部统计，点一行换按钮上显示的那项。
-/// 外框由 TitlebarTools 统一画，这里只是组里的一项。
+/// The word-count button on the right of the title bar: shows the chosen item, or the selection's figure (in accent colour) when text is selected; clicking opens the full statistics, and clicking a row changes what the button shows.
+/// The outer frame is drawn by TitlebarTools; this is just one item in the group.
 struct WordCountButton: View {
     @ObservedObject var controller: EditorController
     @ObservedObject private var settings = AppSettings.shared

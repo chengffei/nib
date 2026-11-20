@@ -6,17 +6,17 @@ enum EditorMode: String, CaseIterable {
     case read, edit, source
 }
 
-/// 一个文档窗口对应一个：SwiftUI 工具栏、文件监听和网页里的编辑器靠它互通。
+/// One per document window: the SwiftUI toolbar, the file watcher and the editor in the web view communicate through it.
 @MainActor
 final class EditorController: ObservableObject {
     @Published var mode: EditorMode = .read
-    /// 全文字数统计和选中部分的统计（没选中为 nil），网页算好报上来。
+    /// Statistics for the whole text and for the selection (nil when nothing is selected), computed by the web page and reported back.
     @Published var stats = TextStats()
     @Published var selectionStats: TextStats?
-    /// 大纲：标题列表、当前读到第几个（没有为 -1）。
+    /// Outline: the list of headings and which one is currently being read (-1 if none).
     @Published var outline: [OutlineItem] = []
     @Published var outlineCurrent = -1
-    /// 标题栏两个面板开没开（开着时标题栏工具不隐藏）。
+    /// Whether the two title-bar panels are open (while open, the title-bar tools do not hide).
     @Published var showOutline = false
     @Published var showWordCount = false
     weak var webView: EditorWebView?
@@ -34,7 +34,7 @@ final class EditorController: ObservableObject {
         webView?.evaluateJavaScript(script)
     }
 
-    /// 盯住磁盘上的文件：别的程序改写它之后，没有未保存改动就原地重载。
+    /// Watch the file on disk: after another program rewrites it, reload in place if there are no unsaved changes.
     func watch(_ url: URL?) {
         guard url != watchedURL else { return }
         watchedURL = url
@@ -47,10 +47,10 @@ final class EditorController: ObservableObject {
             NibApp.log("disk changed, skipped: unsaved edits")
             return
         }
-        // 写入方先删后建的空档里文件不存在，等它建好再说。
+        // In the gap while the writer deletes and recreates the file it does not exist; wait until it is created.
         guard FileManager.default.fileExists(atPath: url.path) else { return }
         let onDisk = (try? FileManager.default.attributesOfItem(atPath: url.path))?[.modificationDate] as? Date
-        // Nib 自己保存也会触发监听；修改时间和文档记的一样就不用动。
+        // Nib's own saves also trigger the watcher; if the modification date matches what the document recorded, do nothing.
         if let onDisk, let known = document.fileModificationDate, abs(onDisk.timeIntervalSince(known)) < 0.001 { return }
         do {
             try document.revert(toContentsOf: url, ofType: type)
@@ -61,11 +61,11 @@ final class EditorController: ObservableObject {
     }
 }
 
-/// 编辑区：WKWebView 里跑 CodeMirror 6（Nib/Editor，由 Web/ 打包）。
-/// 文档真相仍是 `text` 这一个字符串；网页只负责显示和编辑，改动原样传回来。
+/// Editing area: CodeMirror 6 running in a WKWebView (Nib/Editor, bundled from Web/).
+/// The document's source of truth is still the single `text` string; the web page only displays and edits, and changes are passed back as they are.
 struct EditorView: NSViewRepresentable {
     @Binding var text: String
-    /// 文档所在目录；相对路径的图片和链接按它解析。未保存的新文档为 nil。
+    /// Directory containing the document; relative image paths and links resolve against it. nil for an unsaved new document.
     let baseDirectory: String?
     let controller: EditorController
 
@@ -88,9 +88,9 @@ struct EditorView: NSViewRepresentable {
             coordinator.lastBase = baseDirectory
             host.webView?.send("nib.setBaseDir(base)", ["base": baseDirectory ?? NSNull()])
         }
-        // 只有外部改动（磁盘重载、Versions 回滚）才推给网页；自己打的字不回推，否则光标会被重置。
+        // Only external changes (disk reload, Versions rollback) are pushed to the web page; the user's own typing is not pushed back, otherwise the cursor would be reset.
         guard text != coordinator.lastText else { return }
-        // 休眠中的标签没有内核，醒来时会直接装入最新正文。
+        // A sleeping tab has no web engine; on waking it loads the latest text directly.
         guard let webView = host.webView else { return }
         NibApp.log("push external len=\(text.utf16.count)")
         coordinator.lastText = text
@@ -122,19 +122,19 @@ struct EditorView: NSViewRepresentable {
                 if let mode = (body["mode"] as? String).flatMap(EditorMode.init) { controller.mode = mode }
                 NibApp.log("ready")
                 host?.didBecomeReady()
-                // 调试用：NIB_EVAL 里的脚本在第一篇文档就绪后执行一次，用来不抢键盘地测真实窗口。
+                // For debugging: the script in NIB_EVAL runs once after the first document is ready, to test a real window without stealing the keyboard.
                 if let script = NibApp.evalOnce {
                     NibApp.evalOnce = nil
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak controller] in controller?.run(script) }
                 }
-                // 这篇显示出来之后，再给下一篇备好一个内核。
+                // Once this one is shown, prepare an engine for the next one.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { EditorPool.shared.prewarm() }
             case "open":
                 if let link = body["url"] as? String { open(link) }
             case "theme":
-                // 主题量出来是深色还是浅色，窗口外观跟着换。
+                // Measure whether the theme is dark or light and switch the window appearance accordingly.
                 if let dark = body["dark"] as? Bool { AppSettings.shared.typoraDark = dark }
-                // 主题底色也报回来：标题栏涂成同一个颜色，顶部和正文连成一片。
+                // The theme background colour is also reported back: the title bar is painted the same colour so the top and the body look continuous.
                 if let rgb = body["bg"] as? [Double], rgb.count == 3 {
                     AppSettings.shared.typoraBackground = NSColor(srgbRed: rgb[0] / 255, green: rgb[1] / 255, blue: rgb[2] / 255, alpha: 1)
                 }
@@ -155,7 +155,7 @@ struct EditorView: NSViewRepresentable {
             }
         }
 
-        /// 网址交给浏览器；指向别的 md 的相对链接在新标签里打开；其他文件只放行看的类型，其余在访达里显示。
+        /// Hand URLs to the browser; relative links to other md files open in a new tab; for other files only viewable types are let through, the rest are revealed in Finder.
         private func open(_ link: String) {
             if let url = URL(string: link), let scheme = url.scheme?.lowercased(), ["http", "https", "mailto"].contains(scheme) {
                 NSWorkspace.shared.open(url)
@@ -191,14 +191,14 @@ struct EditorView: NSViewRepresentable {
                         || type?.conforms(to: .html) == true {
                 NSWorkspace.shared.open(target)
             } else {
-                // 脚本、程序之类点一下就执行的东西不替用户打开。
+                // Never open scripts, programs and similar things that execute on a click on the user's behalf.
                 NSWorkspace.shared.activateFileViewerSelecting([target])
             }
         }
     }
 }
 
-/// 备着一个已经加载好内核的空编辑视图。开文档时拿来就填内容，省掉每次重新加载内核的时间。
+/// Keeps an empty editor view with an already loaded engine ready. When a document opens it is taken and filled, saving the time of loading an engine each time.
 @MainActor
 final class EditorPool {
     static let shared = EditorPool()
@@ -215,7 +215,7 @@ final class EditorPool {
     }
 }
 
-/// 收网页发来的消息。单独一个对象是为了不让 WKUserContentController 强引用住网页视图本身。
+/// Receives messages from the web page. A separate object so that WKUserContentController does not strongly retain the web view itself.
 private final class MessageRouter: NSObject, WKScriptMessageHandler {
     weak var view: EditorWebView?
 
@@ -226,7 +226,7 @@ private final class MessageRouter: NSObject, WKScriptMessageHandler {
 }
 
 final class EditorWebView: WKWebView {
-    /// 所有还活着的内核，设置变了要逐个通知。
+    /// All live engines; they must be notified one by one when settings change.
     static let all = NSHashTable<EditorWebView>.weakObjects()
     var target: EditorView.Coordinator?
     private var booted = false
@@ -237,7 +237,7 @@ final class EditorWebView: WKWebView {
         let router = MessageRouter()
         let config = WKWebViewConfiguration()
         config.userContentController.add(router, name: "nib")
-        // 设置在页面脚本运行前就注入，内核一出来就是对的字体和主题，不会先闪一下默认样式。
+        // Settings are injected before page scripts run, so the engine starts with the right font and theme and does not flash the default style first.
         if let data = try? JSONSerialization.data(withJSONObject: AppSettings.shared.javascriptPayload),
            let json = String(data: data, encoding: .utf8) {
             config.userContentController.addUserScript(
@@ -251,7 +251,7 @@ final class EditorWebView: WKWebView {
         let webView = EditorWebView(frame: NSRect(x: 0, y: 0, width: 860, height: 900), configuration: config)
         router.view = webView
         all.add(webView)
-        // 透明底：背景色由 SwiftUI 那层给，深色模式下不会先闪一下白。
+        // Transparent background: the SwiftUI layer provides the background colour, so dark mode does not flash white first.
         webView.setValue(false, forKey: "drawsBackground")
         if let directory = Bundle.main.resourceURL?.appendingPathComponent("Editor") {
             webView.loadFileURL(directory.appendingPathComponent("index.html"), allowingReadAccessTo: directory)
@@ -259,7 +259,7 @@ final class EditorWebView: WKWebView {
         return webView
     }
 
-    /// 调网页里的函数。内核还没加载完就先排队，加载完按顺序补发。
+    /// Call a function in the web page. If the engine has not finished loading, queue the call and replay in order once loaded.
     func send(_ script: String, _ arguments: [String: Any]) {
         guard booted else {
             queue.append((script, arguments))
@@ -281,7 +281,7 @@ final class EditorWebView: WKWebView {
     }
 }
 
-/// SwiftUI 持有的是这个容器；里面的网页内核可以在标签转到后台后卸掉，回来时再装。
+/// SwiftUI holds this container; the web engine inside can be unloaded when the tab goes to the background and reinstalled when it returns.
 final class EditorHost: NSView {
     let coordinator: EditorView.Coordinator
     private(set) var webView: EditorWebView?
@@ -299,7 +299,7 @@ final class EditorHost: NSView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
 
-    /// 这个标签是不是所在窗口里正显示的那一个。
+    /// Whether this tab is the one currently shown in its window.
     var isSelectedTab: Bool {
         guard let window else { return false }
         return WindowTabs.shared.isSelected(window)
@@ -309,7 +309,7 @@ final class EditorHost: NSView {
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        // 新打开的文档并进现有窗口的标签页，不另开窗口。
+        // A newly opened document joins the tabs of the existing window instead of opening a new one.
         if let window {
             WindowTabs.shared.adopt(window)
             TabStripInstaller.install(in: window, controller: coordinator.controller)
@@ -318,7 +318,7 @@ final class EditorHost: NSView {
         EditorHibernator.shared.scheduleEvaluate()
     }
 
-    /// 装上内核并载入当前正文。新开文档和从休眠回来都走这里。
+    /// Install the engine and load the current text. Newly opened documents and wake-ups from sleep both go through here.
     func wake() {
         guard webView == nil else { return }
         if placeholder != nil { NibApp.log("wake from hibernation") }
@@ -339,11 +339,11 @@ final class EditorHost: NSView {
     func didBecomeReady() {
         guard let placeholder else { return }
         self.placeholder = nil
-        // 内核画出第一帧之后再撤掉截图，中间不闪。
+        // Remove the snapshot after the engine has drawn its first frame, so there is no flicker in between.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) { placeholder.removeFromSuperview() }
     }
 
-    /// 截图压成 PNG 再留着：原始位图一张十几兆，压完几百 KB，要显示时才解码。
+    /// Compress the snapshot to PNG before keeping it: the raw bitmap is over ten MB, compressed a few hundred KB, and it is decoded only when displayed.
     private func showPlaceholder(_ image: NSImage?) {
         guard let cgImage = image?.cgImage(forProposedRect: nil, context: nil, hints: nil), let size = image?.size else { return }
         let view = NSImageView(frame: bounds)
@@ -362,7 +362,7 @@ final class EditorHost: NSView {
         }
     }
 
-    /// 卸掉内核，留一张截图占位。只对阅读模式的后台标签做：编辑中的标签卸了会丢撤销历史。
+    /// Unload the engine and leave a snapshot as a placeholder. Only done for background tabs in reading mode: unloading a tab being edited would lose its undo history.
     func hibernate() {
         guard canHibernate, let webView else { return }
         hibernating = true
@@ -374,7 +374,7 @@ final class EditorHost: NSView {
                     MainActor.assumeIsolated {
                         guard let self else { return }
                         self.hibernating = false
-                        // 等截图的这点时间里用户切回来了，或者进了编辑，就不卸。
+                        // If the user switched back or started editing during the short wait for the snapshot, do not unload.
                         guard self.webView === webView, !self.isSelectedTab, self.coordinator.controller.mode == .read else { return }
                         self.savedScroll = top
                         self.showPlaceholder(image)
@@ -389,11 +389,11 @@ final class EditorHost: NSView {
     }
 }
 
-/// 管哪些后台标签留着内核。每个内核是一个 50 到 100 MB 的网页进程，标签一多就得卸。
+/// Decides which background tabs keep their engine. Each engine is a 50 to 100 MB web process, so with many tabs they must be unloaded.
 @MainActor
 final class EditorHibernator {
     static let shared = EditorHibernator()
-    /// 除了正显示的标签，再留几个最近用过的不卸，来回切换时不用等。
+    /// Besides the visible tab, keep a few most recently used ones loaded so switching back and forth does not wait.
     static let keepAlive = 2
     private var hosts: [WeakHost] = []
     private var scheduled = false
@@ -405,7 +405,7 @@ final class EditorHibernator {
         for name in [NSWindow.didBecomeKeyNotification, NSWindow.didChangeOcclusionStateNotification] {
             center.addObserver(forName: name, object: nil, queue: .main) { _ in
                 MainActor.assumeIsolated {
-                    // 唤醒不等：切到休眠的标签要马上装内核。卸内核不急，等界面落定再算。
+                    // Waking does not wait: switching to a sleeping tab must install the engine at once. Unloading is not urgent; compute after the UI settles.
                     EditorHibernator.shared.wakeSelected()
                     EditorHibernator.shared.scheduleEvaluate()
                 }
@@ -420,7 +420,7 @@ final class EditorHibernator {
     func scheduleEvaluate() {
         guard !scheduled else { return }
         scheduled = true
-        // 切标签时会连着来好几条通知，等界面落定再算一次。
+        // Switching tabs sends several notifications in a row; wait until the UI settles and compute once.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
             self?.scheduled = false
             self?.evaluate()
@@ -446,16 +446,16 @@ final class EditorHibernator {
     }
 }
 
-/// 给网页里的 <img> 读本地图片。只放行图片类型，别的文件一律拒绝。
+/// Serves local images to <img> in the web page. Only image types are allowed; any other file is refused.
 final class ImageSchemeHandler: NSObject, WKURLSchemeHandler {
     func webView(_ webView: WKWebView, start task: any WKURLSchemeTask) {
         guard let url = task.request.url else { return }
         let file = URL(fileURLWithPath: url.path)
-        // 图片之外再放行字体：Typora 主题会带自己的字体文件。
+        // Fonts are allowed besides images: Typora themes bring their own font files.
         guard let type = UTType(filenameExtension: file.pathExtension), type.conforms(to: .image) || type.conforms(to: .font),
               let data = try? Data(contentsOf: file, options: .mappedIfSafe)
         else {
-            // 回一个空的 404 而不是报错：这样网页里 <img> 的 error 事件才会触发，显示「图片无法显示」。
+            // Reply with an empty 404 rather than an error, so the <img> error event fires in the web page and shows "image cannot be displayed".
             NibApp.log("image refused \(file.path)")
             if let response = HTTPURLResponse(url: url, statusCode: 404, httpVersion: nil, headerFields: nil) {
                 task.didReceive(response)
@@ -473,7 +473,7 @@ final class ImageSchemeHandler: NSObject, WKURLSchemeHandler {
     func webView(_ webView: WKWebView, stop task: any WKURLSchemeTask) {}
 }
 
-/// 监听一个文件被改写。原子写入会换掉文件本身，所以收到改名或删除后要重新盯住同一路径。
+/// Watch a file for being rewritten. Atomic writes replace the file itself, so after a rename or delete event the same path must be watched again.
 @MainActor
 final class FileWatcher {
     private let url: URL
@@ -494,7 +494,7 @@ final class FileWatcher {
         source = nil
         let descriptor = open(url.path, O_EVTONLY)
         guard descriptor >= 0 else {
-            // 写入方先删后建的空档里文件不存在，稍等再试。
+            // In the gap while the writer deletes and recreates the file it does not exist; wait a moment and retry.
             guard retries > 0 else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in self?.arm(retries: retries - 1) }
             return
@@ -512,11 +512,11 @@ final class FileWatcher {
         source.setCancelHandler { close(descriptor) }
         source.resume()
         self.source = source
-        // 重新盯上之前，新文件可能已经写完了，补查一次。
+        // Before re-watching, the new file may already be fully written, so check once more.
         if retries > 0 { schedule() }
     }
 
-    /// 写入方常常分几次写完，攒 80 毫秒再通知一次。
+    /// Writers often finish in several steps; collect for 80 ms before notifying once.
     private func schedule() {
         pending?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.onChange() }

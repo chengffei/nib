@@ -14,10 +14,13 @@ targets:
       - path: Nib/Editor
         type: folder
         buildPhase: resources
+      - path: docs
+        type: folder
+        buildPhase: resources
     entitlements:
       path: Nib/Nib.entitlements
       properties:
-        # 11-14 Felix 定：自用不上架，关沙盒，文档旁边的图片才能直接读
+        # Not sandboxed: not distributed via the App Store, and images next to the document must be readable directly
         com.apple.security.app-sandbox: false
     info:
       path: Nib/Info.plist

@@ -1,14 +1,14 @@
-// 即时渲染：光标所在行显示源码，其余行隐藏语法标记。
-// 只改显示（装饰），不改文档，所以保存出去的永远是原文。
+// Live preview: the cursor line shows source, other lines hide syntax markers.
+// Only the display (decorations) changes, never the document, so what gets saved is always the original text.
 import { Decoration, ViewPlugin, WidgetType } from '@codemirror/view'
 import { syntaxTree } from '@codemirror/language'
 import { Facet } from '@codemirror/state'
 import { t } from './i18n.js'
 
-/** 阅读模式：没有「正在编辑」的行，整篇都渲染。 */
+/** Read mode: no line is "being edited"; the whole document is rendered. */
 export const reading = Facet.define({ combine: (values) => values.some(Boolean) })
 
-/** 选区按整行外扩后的范围；与它相交的节点算「正在编辑」。 */
+/** The selection expanded to whole lines; nodes intersecting it count as "being edited". */
 export function activeRanges(state) {
   if (state.facet(reading)) return []
   return state.selection.ranges.map((r) => ({
@@ -19,7 +19,7 @@ export function activeRanges(state) {
 
 export const touches = (act, from, to) => act.some((r) => r.from <= to && r.to >= from)
 
-/** 点链接时调；main.js 会换成能处理文内锚点的版本。 */
+/** Called when a link is clicked; main.js swaps in a version that handles in-document anchors. */
 export const links = { open: (href) => post({ type: 'open', url: href }) }
 
 export function post(message) {
@@ -44,7 +44,7 @@ class BulletWidget extends WidgetType {
 }
 
 class CheckboxWidget extends WidgetType {
-  /** 替换整段「- [ ]」；offset 是方括号相对列表符号的偏移。 */
+  /** Replaces the whole "- [ ]" span; offset is the bracket's offset relative to the list marker. */
   constructor(checked, offset) {
     super()
     this.checked = checked
@@ -76,7 +76,7 @@ class CheckboxWidget extends WidgetType {
   }
 }
 
-/** 把 md 里的图片地址换成能加载的地址；本地文件走 nib-file，由外壳读盘。网络图片不加载。 */
+/** Rewrites image URLs in the markdown to loadable ones; local files go through nib-file and are read from disk by the shell. Remote images are not loaded. */
 export function resolveImage(src) {
   const raw = src.trim().replace(/^<|>$/g, '')
   if (!raw || /^https?:/i.test(raw)) return null
@@ -102,7 +102,7 @@ class ImageWidget extends WidgetType {
     return other.url === this.url && other.alt === this.alt
   }
   toDOM(view) {
-    // 外面包一层：编辑器只认这层根节点，里面的 <img> 才能在加载失败时换成文字
+    // Wrapped in an outer element: the editor only recognises this root node, which lets the inner <img> be swapped for text if loading fails
     const wrap = document.createElement('span')
     wrap.className = 'nib-img-wrap'
     const img = document.createElement('img')
@@ -123,7 +123,7 @@ class ImageWidget extends WidgetType {
   }
 }
 
-/** 标题左边留白里的层级小标（照 Bear 2）。点它把光标放到行首，# 露出来，就能改层级。 */
+/** Heading level badge in the left margin (as in Bear 2). Clicking it puts the cursor at line start and reveals the #, so the level can be changed. */
 class LevelWidget extends WidgetType {
   constructor(level) {
     super()
@@ -206,7 +206,7 @@ function build(view) {
   }
 
   for (const range of view.visibleRanges) {
-    // 空行：块之间的空行在套主题时压成主题的块间距。
+    // Blank lines: under a theme, blank lines between blocks are squeezed to the theme's block spacing.
     eachLine(doc, range.from, range.to, (line) => {
       if (!line.text.trim()) lineDeco(line.from, 'nib-blank')
     })
@@ -216,7 +216,7 @@ function build(view) {
       enter(n) {
         const name = n.name
 
-        // 跨多行的块：按可见范围逐行加样式，不去重
+        // Multi-line blocks: style each visible line individually, without deduplication
         if (name === 'FencedCode' || name === 'CodeBlock') {
           blockLines(n, range, 'nib-cb')
           if (name === 'FencedCode' && !seen.has(`f${n.from}`) && !touches(act, n.from, n.to)) {
@@ -240,7 +240,7 @@ function build(view) {
           return false
         }
 
-        // 顶层段落和列表标出首末行：套 Typora 主题时块间距按块的种类算（typoraEdit.js）。
+        // Top-level paragraphs and lists mark their first and last lines: under a Typora theme, block spacing depends on block type (typoraEdit.js).
         if (name === 'Paragraph' && n.node.parent?.name === 'Document') {
           blockLines(n, range, 'nib-p')
           return true
@@ -263,7 +263,7 @@ function build(view) {
         if (name === 'HeaderMark') {
           const parent = n.node.parent
           if (!parent || !parent.name.startsWith('ATXHeading')) return
-          // 照 Bear：光标在标题行里也不露 #，只有光标碰到 # 本身（行首）才露；层级看左边留白里的「H2」小标。
+          // As in Bear: the # stays hidden even with the cursor in the heading line, and only shows when the cursor touches the # itself (line start); the level is shown by the "H2" badge in the left margin.
           let markEnd = n.to
           while (markEnd < parent.to && /[ \t]/.test(doc.sliceString(markEnd, markEnd + 1))) markEnd++
           const revealTo = n.from === parent.from ? markEnd : n.to
@@ -308,7 +308,7 @@ function build(view) {
           const marks = node.getChildren('LinkMark')
           const url = node.getChild('URL')
           const label = node.getChild('LinkLabel')
-          // 没有地址也没有引用标签的 [文字] 不是链接，原样显示
+          // [text] with neither a URL nor a reference label is not a link and is shown as-is
           if (marks.length < 2 || (!url && !label)) return
           const open = marks[0]
           const close = marks[1]
@@ -358,9 +358,9 @@ function build(view) {
           if (doc.sliceString(end, end + 1) === ' ') end++
           const active = touches(act, line.from, line.to)
           const lead = doc.sliceString(line.from, n.from)
-          // 只有行首是纯缩进时才做悬挂缩进（引用里的列表不做）
+          // Hanging indent only applies when the line starts with pure indentation (not for lists inside blockquotes)
           if (/^[ \t]*$/.test(lead)) {
-            // 未编辑的任务项把「- [ ]」收成一个两格宽的勾选框
+            // For task items not being edited, "- [ ]" collapses into a two-character-wide checkbox
             const shown = isTask && !active ? `${lead}xx ` : doc.sliceString(line.from, end)
             let cols = 0
             for (const ch of shown) cols += ch === '\t' ? 4 - (cols % 4) : 1
@@ -389,7 +389,7 @@ export const livePreview = ViewPlugin.fromClass(
       this.decorations = build(view)
     }
     update(update) {
-      // 中文输入法组字期间不重排：只把现有装饰跟着文字平移，组字结束再重建
+      // No relayout during IME composition (e.g. Chinese input): just shift the existing decorations along with the text, and rebuild once composition ends
       if (update.view.composing) {
         if (update.docChanged) this.decorations = this.decorations.map(update.changes)
         this.dirty = true

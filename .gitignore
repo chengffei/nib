@@ -8,3 +8,7 @@ DerivedData/
 *.xcuserstate
 # macOS
 .DS_Store
+
+# Personal notes (kept local)
+NOTES.md
+REQUIREMENTS.md

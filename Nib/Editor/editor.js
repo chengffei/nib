@@ -77,14 +77,14 @@
   --select-text-bg-color: rgba(0, 113, 227, 0.25);
   --monospace: ui-monospace, "SF Mono", Menlo, monospace;
 }
-/* \u6839\u5B57\u53F7\uFF1A\u4E3B\u9898\u5927\u91CF\u7528 rem\uFF0C\u6309 14px \u7B97 */
+/* Root font size: themes use rem heavily, so assume 14px */
 html { font-size: 14px; background: var(--bg-color); color: var(--text-color); -webkit-font-smoothing: antialiased; text-size-adjust: 100%; }
 body { margin: 0; line-height: 1.43; }
 ::selection { background: var(--select-text-bg-color); }
 #write { position: relative; box-sizing: border-box; max-width: 860px; margin: 0 auto; padding: 32px 32px 96px; overflow-wrap: break-word; }
 #write > ul:first-child, #write > ol:first-child { margin-top: 2em; }
 
-/* \u6BB5\u843D\u4FDD\u7559\u8F6F\u6362\u884C\uFF1B\u6807\u9898\u4E0D\u5728\u5206\u9875\u5904\u65AD\u5F00 */
+/* Paragraphs preserve soft line breaks; headings do not break across pages */
 p { white-space: pre-wrap; }
 h1, h2, h3, h4, h5, h6 { break-inside: avoid; break-after: avoid-page; }
 hr { break-after: avoid; }
@@ -92,7 +92,7 @@ blockquote { margin: 1em 0; }
 a { cursor: pointer; }
 img { max-width: 100%; vertical-align: middle; image-orientation: from-image; }
 
-/* \u8868\u683C\u5305\u5728 figure.table-figure \u91CC\uFF0C\u5BBD\u8868\u6A2A\u5411\u6EDA\u52A8 */
+/* Tables are wrapped in figure.table-figure; wide tables scroll horizontally */
 figure { margin: 1em 0; padding: 0; overflow-x: auto; }
 figure > table, li > figure:last-child { margin-bottom: 0; }
 table { width: 100%; border-collapse: collapse; border-spacing: 0; text-align: left; }
@@ -100,14 +100,14 @@ table.md-table td { min-width: 2.5em; }
 thead { display: table-header-group; }
 tr { break-inside: avoid; }
 
-/* \u4EE3\u7801\uFF1Apre.md-fences \u5185\u662F CodeMirror 5 \u7684\u884C\u7ED3\u6784 */
+/* Code: inside pre.md-fences is CodeMirror 5's line structure */
 code, kbd, pre, samp, tt { font-family: var(--monospace); }
 pre.md-fences { display: block; position: relative; margin: 0 0 1em; padding: 6px 4px; font-size: 0.9rem; white-space: pre; text-align: left; background: inherit; break-inside: avoid; }
 .CodeMirror { height: auto; }
 .CodeMirror pre, .CodeMirror-line { margin: 0; padding: 0 4px; border: 0; background: none; font: inherit; line-height: inherit; }
 .CodeMirror-wrap pre.CodeMirror-line { white-space: pre-wrap; overflow-wrap: break-word; }
 
-/* \u4EFB\u52A1\u5217\u8868\uFF1A\u52FE\u9009\u6846\u6302\u5728\u6587\u5B57\u5DE6\u4FA7 */
+/* Task list: the checkbox hangs to the left of the text */
 .md-task-list-item { position: relative; list-style: none; }
 .md-task-list-item > input { position: absolute; top: 0.3em; left: 0; margin: 0 0 0 -1.3em; border: none; }
 

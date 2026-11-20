@@ -5,7 +5,7 @@ extension UTType {
     static let markdownDocument = UTType(importedAs: "net.daringfireball.markdown")
 }
 
-/// 源文件是唯一真相：文档模型只有一个字符串。换行符（LF/CRLF）随原文保留，不做规范化。
+/// The source file is the single source of truth: the document model is just one string. Line endings (LF/CRLF) are kept as in the original, with no normalisation.
 struct MarkdownDocument: FileDocument {
     var text: String
 
@@ -27,11 +27,11 @@ struct MarkdownDocument: FileDocument {
     }
 }
 
-/// 改了没存要看得见、关窗要问：关掉「原地自动保存」（11-19 Felix 定）。
-/// 原地自动保存时系统几秒就把改动写回原文件，未保存点一闪而过，关窗也从不询问。
-/// 关掉后改动先自动存到系统的备份位置（崩溃、断电照样能恢复），原文件只在 ⌘S 或关窗选「保存」时才写。
-/// 代价：「复原到」里的 Versions 版本浏览不可用。
-/// SwiftUI 的 DocumentGroup 不让换 NSDocument 子类，只能在运行时改它的类方法 autosavesInPlace。
+/// Unsaved changes must be visible and closing the window must ask: turn off "autosave in place".
+/// With autosave in place the system writes changes back to the original file within seconds, the unsaved dot flashes by, and closing a window never asks.
+/// With it off, changes are first autosaved to the system's backup location (recoverable after a crash or power loss), and the original file is written only on ⌘S or when choosing "Save" while closing.
+/// Cost: Versions browsing under "Revert To" is unavailable.
+/// SwiftUI's DocumentGroup does not allow swapping the NSDocument subclass, so the only way is to change its class method autosavesInPlace at runtime.
 @MainActor
 enum ExplicitSave {
     private static var patched = Set<ObjectIdentifier>()

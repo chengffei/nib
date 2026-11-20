@@ -1,11 +1,11 @@
-/* Nib 编辑区样式。颜色只在这里定义，深浅色随系统。 */
+/* Nib editor styles. Colours are defined only here; light/dark follows the system. */
 :root {
   color-scheme: light dark;
   --fs: 16px;
   --lh: 1.75;
-  /* 列表整体右移，圆点和文字各成一列（照 Bear） */
+  /* The whole list shifts right so bullets and text form separate columns (as in Bear) */
   --li-shift: 0.75em;
-  /* 版心跟窗口走：左右留白随窗口宽度在 40-140px 之间伸缩，正文占满其余宽度。 */
+  /* Content width follows the window: side margins flex between 40 and 140px with window width, and the text fills the rest. */
   --gutter: clamp(40px, 7vw, 140px);
   --mono-w: 0.602em;
   --text: #1d1d1f;
@@ -50,7 +50,7 @@
   }
 }
 
-/* 暖纸主题：浅色基础上换一套暖色。窗口外观由外壳固定为浅色。 */
+/* Warm paper theme: a warm palette on top of the light base. The shell pins the window appearance to light. */
 :root[data-theme="paper"] {
   --bg: #f8f1e3;
   --text: #3a3128;
@@ -74,7 +74,7 @@ html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
 .nib .cm-content { margin: 0 auto; padding: 44px var(--gutter) 40vh; caret-color: var(--accent); }
 .nib .cm-line { padding: 0; }
 
-/* 标题：层级只靠字号和字重 */
+/* Headings: level is conveyed only by font size and weight */
 .nib .cm-line.nib-h { font-weight: 700; letter-spacing: -0.012em; }
 .nib .cm-line.nib-h1 { font-size: 1.75em; line-height: 1.25; padding: 0.5em 0 0.2em; }
 .nib .cm-line.nib-h2 { font-size: 1.375em; line-height: 1.3; padding: 0.9em 0 0.3em; }
@@ -82,17 +82,17 @@ html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
 .nib .cm-line.nib-h4, .nib .cm-line.nib-h5, .nib .cm-line.nib-h6 { font-weight: 600; }
 .nib .cm-line.nib-h6 { color: var(--text2); }
 
-/* 标题层级小标：放在左边留白里，不占正文宽度。外层是零宽的行内块，跟着标题第一行的基线走（标题上有内边距、折行都不影响）。 */
+/* Heading level badge: sits in the left margin and takes no body width. The outer element is a zero-width inline block that follows the baseline of the heading's first line (unaffected by heading padding or wrapping). */
 .nib .nib-hlevel { display: inline-block; position: relative; width: 0; height: 0; user-select: none; }
 .nib .nib-hlevel > span { position: absolute; right: 0; bottom: 0.2em; margin-right: 12px; font: 600 10px/1 var(--sans); letter-spacing: 0.02em;
   white-space: nowrap; color: var(--text3); opacity: 0.75; cursor: text; }
 .nib .cm-line.nib-h:hover .nib-hlevel > span { opacity: 1; }
 
-/* 段落间距：块之间的空行压成这个高度（默认 0.75 行，偏紧，照 Bear）。正文字距略收。 */
+/* Paragraph spacing: blank lines between blocks are squeezed to this height (default 0.75 line, fairly tight, as in Bear). Body letter-spacing is slightly tightened. */
 .nib .cm-line.nib-blank:not(.nib-cb):not(.nib-fm):not(.nib-mono) { height: calc(var(--para, 0.75) * var(--lh) * 1em); }
 .nib .cm-content { letter-spacing: -0.006em; }
 
-/* 行内 */
+/* Inline */
 .nib .nib-strong { font-weight: 600; }
 .nib .nib-em { font-style: italic; }
 .nib .nib-del { text-decoration: line-through; color: var(--text2); }
@@ -103,31 +103,31 @@ html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
 .nib .nib-img { display: inline-block; max-width: 100%; height: auto; border-radius: 8px; vertical-align: top; text-indent: 0; }
 .nib .nib-img-missing { color: var(--text3); font-size: 0.88em; }
 
-/* 引用 */
+/* Blockquote */
 .nib .cm-line.nib-quote { color: var(--text2); padding-left: 18px; box-shadow: inset 3px 0 0 var(--sep); }
 .nib .cm-line.nib-quote-2 { padding-left: 36px; background: linear-gradient(var(--sep), var(--sep)) 18px 0 / 3px 100% no-repeat; }
 
-/* 列表：前缀用等宽字体，悬挂缩进才能和折行对齐 */
+/* Lists: the marker uses a monospace font so the hanging indent lines up with wrapped lines */
 .nib .cm-line.nib-li { padding-left: calc(var(--nib-indent) * var(--mono-w) + var(--li-shift)); text-indent: calc(var(--nib-indent) * var(--mono-w) * -1); }
 .nib .nib-li-prefix { font-family: var(--mono); tab-size: 4; color: var(--text2); font-variant-numeric: tabular-nums; }
 .nib .nib-bullet { display: inline-block; text-align: center; text-indent: 0; color: var(--accent); font-family: var(--mono); transform: scale(1.2); }
 .nib .nib-task { display: inline-block; text-indent: 0; text-align: left; font-family: var(--mono); }
 .nib .nib-task input { margin: 0; width: 0.95em; height: 0.95em; vertical-align: -0.1em; accent-color: var(--accent); }
 
-/* 分割线 */
+/* Thematic break */
 .nib .nib-hr { display: inline-block; width: 100%; height: 1px; background: var(--sep); vertical-align: middle; }
 
-/* 代码块 */
+/* Code block */
 .nib .cm-line.nib-cb { font-family: var(--mono); font-size: 0.88em; line-height: 1.6; background: var(--fill); padding: 0 16px; }
 .nib .cm-line.nib-cb-first { border-radius: 10px 10px 0 0; }
 .nib .cm-line.nib-cb-last { border-radius: 0 0 10px 10px; }
 .nib .cm-line.nib-cb-first.nib-cb-last { border-radius: 10px; }
 
-/* 以源码显示的块：正在编辑的表格、front matter */
+/* Blocks shown as source: the table being edited, front matter */
 .nib .cm-line.nib-mono { font-family: var(--mono); font-size: 0.88em; }
 .nib .cm-line.nib-fm { font-family: var(--mono); font-size: 0.82em; color: var(--text2); }
 
-/* 渲染后的表格：只用细线，不加底色和边框 */
+/* Rendered tables: thin rules only, no background or border */
 .nib .nib-table-wrap { padding: 4px 0 8px; overflow-x: auto; cursor: text; }
 .nib .nib-table-wrap table { border-collapse: collapse; font-size: 0.94em; line-height: 1.45; }
 .nib .nib-table-wrap th, .nib .nib-table-wrap td { padding: 7px 20px 7px 0; text-align: left; vertical-align: top; border-bottom: 1px solid var(--sep); }
@@ -136,15 +136,15 @@ html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
 .nib .nib-table-wrap .nib-img { max-width: 240px; }
 .nib .nib-table-wrap code { font-family: var(--mono); font-size: 0.9em; background: var(--fill); border-radius: 4px; padding: 0.1em 0.3em; }
 
-/* 源码模式：整篇等宽 */
+/* Source mode: whole document in monospace */
 .nib[data-mode="source"] .cm-scroller { font-family: var(--mono); font-size: 0.9em; }
 
-/* 阅读模式：链接可直接点 */
+/* Read mode: links are directly clickable */
 .nib[data-mode="read"] .nib-link { cursor: pointer; }
 .nib.nib-cmd .nib-link, .nib.nib-cmd #nib-typora a[href] { cursor: pointer; text-decoration: underline !important; text-underline-offset: 0.18em; }
 .nib[data-mode="read"] .nib-task input { pointer-events: none; }
 
-/* 查找条（findPanel.js）：照 macOS 查找栏，圆角搜索框、箭头、选项开关、「完成」。 */
+/* Find bar (findPanel.js): modelled on the macOS find bar, with a rounded search field, arrows, option toggles and a "Done" button. */
 .nib .cm-panels { background: var(--panel); color: var(--text); border-color: var(--sep); font: 13px var(--sans); }
 .nib .cm-panels-top { border-bottom: 0.5px solid var(--sep); }
 .nib .cm-searchMatch { background: rgba(255, 204, 0, 0.35); border-radius: 2px; }
@@ -173,8 +173,8 @@ html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
 .nib-find-button:active { background: var(--fill); }
 .nib-find-replace .nib-find-field { padding-left: 8px; }
 
-/* 滚动条：原生的藏掉，scrollbar.js 画一条仿系统的浮动滚动条。
-   平时 6 点宽，鼠标移上去或拖动时 9 点，滚动停下约 1 秒后淡出。 */
+/* Scrollbar: the native one is hidden; scrollbar.js draws a system-style floating scrollbar.
+   6pt wide normally, 9pt on hover or drag, fading out about 1 second after scrolling stops. */
 .nib .cm-scroller { scrollbar-width: none; }
 .nib .cm-scroller::-webkit-scrollbar { display: none; }
 .nib-scrollbar { position: fixed; top: 0; bottom: 0; right: 0; width: 15px; z-index: 20; opacity: 0; transition: opacity 0.4s ease; }
@@ -183,22 +183,22 @@ html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
   transition: width 0.15s ease, right 0.15s ease, border-radius 0.15s ease, background-color 0.15s ease; }
 .nib-scrollbar.hover .nib-scrollbar-thumb,
 .nib-scrollbar.dragging .nib-scrollbar-thumb { width: 9px; right: 2px; border-radius: 4.5px; background: var(--thumb-strong); }
-/* 表格横向滚动保留原生行为，只换成细条。 */
+/* Tables keep native horizontal scrolling, just with a thin bar. */
 .nib .nib-table-wrap::-webkit-scrollbar { height: 6px; }
 .nib .nib-table-wrap::-webkit-scrollbar-track { background: transparent; }
 .nib .nib-table-wrap::-webkit-scrollbar-thumb { background: var(--thumb); border-radius: 3px; }
 
-/* Typora 主题（readView.js / typoraTheme.js）。阅读层盖满整页，编辑器藏起来。 */
+/* Typora theme (readView.js / typoraTheme.js). The read layer covers the whole page and the editor is hidden. */
 #nib-typora { position: fixed; inset: 0; overflow-y: auto; scrollbar-width: none; }
 #nib-typora::-webkit-scrollbar { display: none; }
-/* Typora 主题自带固定版心（多为 860px 加断点），这里统一改成跟窗口走。 */
+/* Typora themes ship a fixed content width (mostly 860px plus breakpoints); here it is overridden to follow the window. */
 #nib-typora #write { max-width: none !important; padding-left: var(--gutter) !important; padding-right: var(--gutter) !important; }
 #nib-typora[hidden], .nib-find[hidden] { display: none; }
 body.typora-reading .cm-editor { display: none !important; }
 .nib-find-floating { position: fixed; top: 0; left: 0; right: 0; z-index: 30; background: var(--panel); color: var(--text); border-bottom: 0.5px solid var(--sep); }
 ::highlight(nib-find) { background-color: rgba(255, 204, 0, 0.4); color: inherit; }
 ::highlight(nib-find-current) { background-color: rgba(255, 170, 0, 0.9); color: #000; }
-/* 编辑和源码模式借主题的底色、文字色、链接色和字体。 */
+/* Edit and source modes borrow the theme's background, text colour, link colour and font. */
 body.nib.typora-active { --bg: var(--t-bg); --text: var(--t-text); --text2: var(--t-text2); --text3: var(--t-text3);
   --accent: var(--t-accent); --sans: var(--t-sans); --mono: var(--t-mono); background: var(--t-bg);
   --thumb: var(--t-thumb); --thumb-strong: var(--t-thumb-strong); }
@@ -206,10 +206,10 @@ html:has(body.typora-active) { background: var(--t-bg); }
 :root[data-typora-dark="true"] body.typora-active { --fill: rgba(255, 255, 255, 0.07); --sep: rgba(255, 255, 255, 0.16); --panel: rgba(255, 255, 255, 0.06);
   --field: rgba(255, 255, 255, 0.08); --btn: rgba(255, 255, 255, 0.12); }
 
-/* 专注模式：光标所在的块之外调淡（focusModes.js）。阅读模式不生效。 */
+/* Focus mode: everything except the block under the cursor is dimmed (focusModes.js). Has no effect in read mode. */
 body.nib-focus:not([data-mode="read"]) .cm-content > .cm-line,
 body.nib-focus:not([data-mode="read"]) .cm-content > .nib-table-wrap { opacity: 0.3; transition: opacity 0.2s ease; }
 body.nib-focus:not([data-mode="read"]) .cm-content > .cm-line.nib-focus-on { opacity: 1; }
-/* 打字机模式：底部留够半屏，最后几行也能停到中间。 */
+/* Typewriter mode: half a screen of bottom padding so the last lines can also rest in the middle. */
 body.nib-typewriter .cm-content { padding-bottom: 50vh; }
 @media (prefers-reduced-motion: reduce) { body.nib-focus .cm-content > * { transition: none !important; } }

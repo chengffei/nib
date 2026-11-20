@@ -1,7 +1,7 @@
-// 短列不换行：中文任意处可断，浏览器自动布局会把短列挤成一字一行，长列独占宽度。
-// 一列里每格都不超过 SHORT 个半角宽（中文算 2）时，整列不换行，其余宽度留给长列。
-// 会换行的列给个最小宽度：浏览器按内容长短分多出来的宽度，一列特别长时别的换行列只分到一两个字宽（11-19 Felix 反馈）。
-// 最小宽度 = 内容宽度与 MIN_EM 取小，半角宽按 0.5em 算；最长的那列不设，剩下的宽度本来就归它。
+// Short columns do not wrap: Chinese text can break anywhere, and the browser's automatic layout would squeeze short columns to one character per line and give long columns all the width.
+// When every cell in a column is at most SHORT half-width units (CJK counts as 2), the column does not wrap and the remaining width goes to the long columns.
+// Wrapping columns get a minimum width: the browser distributes extra width by content length, so when one column is very long the other wrapping columns get only a character or two.
+// Minimum width = the smaller of the content width and MIN_EM, with a half-width unit counted as 0.5em; the longest column gets none, since the leftover width goes to it anyway.
 const SHORT = 30
 const MIN_EM = 8
 

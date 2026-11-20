@@ -1,14 +1,14 @@
 import SwiftUI
 
 struct OutlineItem: Identifiable, Equatable {
-    /// 第几个标题，跳转时按它对应。
+    /// Index of the heading, used to match it when jumping.
     let index: Int
     let level: Int
     let text: String
     var id: Int { index }
 }
 
-/// 标题栏组里的一项：20 点高，悬停或面板打开时垫一层浅底，和标签条、模式切换同一套外形。
+/// One item in the title-bar group: 20 pt high, with a light fill on hover or when the panel is open, the same shape as the tab strip and mode switch.
 struct TitlebarItem<Label: View>: View {
     var active = false
     let help: LocalizedStringKey
@@ -30,7 +30,7 @@ struct TitlebarItem<Label: View>: View {
     }
 }
 
-/// 大纲按钮：点开是标题列表，当前一节高亮，点一项滚过去，面板不关，可以连着跳。
+/// Outline button: opens the heading list, the current section is highlighted, clicking an item scrolls to it, and the panel stays open so you can jump repeatedly.
 struct OutlineButton: View {
     @ObservedObject var controller: EditorController
 
@@ -49,11 +49,11 @@ struct OutlineButton: View {
 
 private struct OutlinePanel: View {
     @ObservedObject var controller: EditorController
-    /// 收起的标题（按 index）。面板关了再开会全部展开，和 Typora 一样只在这一次查看里有效。
+    /// Collapsed headings (by index). Closing and reopening the panel expands all, like Typora: only valid within one viewing.
     @State private var collapsed = Set<Int>()
 
     private var items: [OutlineItem] { controller.outline }
-    /// 最浅的那级顶格，其余按相对层级缩进。
+    /// The shallowest level is flush left; the rest are indented by relative level.
     private var baseLevel: Int { items.map(\.level).min() ?? 1 }
 
     var body: some View {
@@ -79,7 +79,7 @@ private struct OutlinePanel: View {
         }
     }
 
-    /// 当前一节；它被收起时落到可见的上级。
+    /// The current section; when it is collapsed, falls back to its visible ancestor.
     private var current: Int {
         var index = controller.outlineCurrent
         while index >= 0, !visible.contains(where: { $0.index == index }) { index = parent(of: index) ?? -1 }

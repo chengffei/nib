@@ -1,8 +1,8 @@
 import Combine
 import SwiftUI
 
-/// Nib 自己管标签，不用系统标签组：系统标签组在两个以上标签时强制显示自带标签栏，顶部就成了两行。
-/// 每篇文档仍是一个独立的 NSDocument 窗口，保存、Versions 照旧；一组标签叠在同一位置，只有选中的那个在屏幕上，其余收起来。
+/// Nib manages its own tabs instead of using system tab groups: with two or more tabs the system forces its own tab bar, which would make the top two rows tall.
+/// Each document is still its own NSDocument window (saving and Versions are unchanged); the tabs of a group are stacked in the same spot, only the selected one is on screen and the rest are tucked away.
 @MainActor
 final class WindowTabs {
     static let shared = WindowTabs()
@@ -14,14 +14,14 @@ final class WindowTabs {
     }
 
     private var groups: [Group] = []
-    /// 正在改名的文档窗口（标签条显示输入框）。
+    /// The document window being renamed (the tab strip shows a text field).
     weak var renaming: NSWindow? { didSet { if oldValue !== renaming { post() } } }
     private weak var lastActive: Group?
-    /// 关掉的标签，后关的在最后，⇧⌘T 按这个顺序重新打开。没存过的新文档没有路径，不记。
+    /// Closed tabs, most recent last; ⇧⌘T reopens them in that order. New unsaved documents have no path and are not recorded.
     private var closedURLs: [URL] = []
-    /// 批量关闭时等未保存询问框收起的监听，按窗口存，用完即删。
+    /// Observers that wait for the unsaved-changes sheet to go away during a bulk close, keyed by window and removed after use.
     private var sheetObservers: [ObjectIdentifier: NSObjectProtocol] = [:]
-    /// 新窗口上屏前后系统会让新旧窗口轮流成为焦点，这段时间不把焦点变化当成切标签。
+    /// When a new window comes on screen the system makes old and new windows take focus in turn; focus changes in this period are not treated as tab switches.
     private var adopting = 0
 
     private init() {
@@ -30,21 +30,21 @@ final class WindowTabs {
             guard let window = note.object as? NSWindow else { return }
             MainActor.assumeIsolated { WindowTabs.shared.remove(window) }
         }
-        // 从「窗口」菜单或别处把收起的标签叫到前面，也当作切到它。
+        // A tucked-away tab brought to the front from the Window menu or elsewhere also counts as switching to it.
         center.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { note in
             guard let window = note.object as? NSWindow else { return }
             MainActor.assumeIsolated { WindowTabs.shared.didActivate(window) }
         }
     }
 
-    /// 新文档窗口进来：并进当前在用的那组，放在选中标签后面，叠到同一位置。
+    /// A new document window arrives: join the group currently in use, placed after the selected tab and stacked in the same spot.
     func adopt(_ window: NSWindow) {
         guard group(of: window) == nil else { return }
         ExplicitSave.apply(to: window)
         window.tabbingMode = .disallowed
-        // 切标签是收起一个、摆出另一个，系统的窗口弹出动画会让它看起来像开了新窗口。
+        // Switching tabs hides one window and shows another; the system's window pop-up animation would make it look like a new window opened.
         window.animationBehavior = .none
-        // 刚打开的这篇会被记进「最近使用」；设置里关了就清掉。窗口能否恢复也在这里跟设置对齐。
+        // The document just opened is added to Recents; cleared if that is turned off in Settings. Window restoration is also aligned with the setting here.
         AppSettings.applyHistory(window: window)
         AppSettings.applyChrome(window)
         guard let target = activeGroup(), let current = target.selected, current !== window else {
@@ -62,7 +62,7 @@ final class WindowTabs {
         lastActive = target
         let frame = current.frame
         window.setFrame(frame, display: false)
-        // 系统会先把新窗口错开摆一下（层叠），先透明，对齐之后再显形，不然能看到它跳一下。
+        // The system first offsets the new window (cascade); keep it transparent and reveal it after aligning, otherwise you would see it jump.
         window.alphaValue = 0
         adopting += 1
         NibApp.log("tabs adopt, group size \(target.windows.count)")
@@ -74,7 +74,7 @@ final class WindowTabs {
             }
             window.setFrame(frame, display: true)
             window.makeKeyAndOrderFront(nil)
-            // 层叠可能在这之后才生效，下一拍再对齐一次，然后显形、收起旧的。
+            // The cascade may only take effect after this, so align once more on the next tick, then reveal it and tuck away the old one.
             DispatchQueue.main.async {
                 if window.frame != frame { window.setFrame(frame, display: true) }
                 window.alphaValue = 1
@@ -89,7 +89,7 @@ final class WindowTabs {
         return (group.windows, group.selected)
     }
 
-    /// 这个窗口是不是所在组里正显示的那个。
+    /// Whether this window is the one currently shown in its group.
     func isSelected(_ window: NSWindow) -> Bool {
         guard let group = group(of: window) else { return true }
         return group.selected === window
@@ -112,7 +112,7 @@ final class WindowTabs {
         post()
     }
 
-    /// 切到前一个或后一个标签，到头了绕回另一端。
+    /// Switch to the previous or next tab, wrapping around at the ends.
     func selectAdjacent(_ offset: Int) {
         guard let group = activeGroup(), group.windows.count > 1, let current = group.selected,
               let index = group.windows.firstIndex(where: { $0 === current }) else { return }
@@ -120,7 +120,7 @@ final class WindowTabs {
         select(group.windows[(index + offset + count) % count])
     }
 
-    /// ⌘1 到 ⌘8 按位置切，⌘9 去最后一个。
+    /// ⌘1 to ⌘8 switch by position; ⌘9 goes to the last one.
     func select(number: Int) {
         guard let group = activeGroup(), !group.windows.isEmpty else { return }
         let index = number == 9 ? group.windows.count - 1 : number - 1
@@ -129,14 +129,14 @@ final class WindowTabs {
         select(group.windows[index])
     }
 
-    /// 关标签。收起的标签先切过来再关：有未保存改动时询问框要挂在看得见的窗口上。
+    /// Close a tab. A tucked-away tab is switched to first and then closed: the unsaved-changes sheet must attach to a visible window.
     func close(_ window: NSWindow) {
         select(window)
         window.performClose(nil)
     }
 
-    /// 关掉组里除它以外的标签（only = nil 时只关它右边的）。先把它摆出来，其余都在后台。
-    /// 有未保存改动的一个个切过来问，用户点了取消就停下，后面的不再关。
+    /// Close the other tabs in the group (with only = nil, only those to its right). It is brought to the front first; the rest are in the background.
+    /// Tabs with unsaved changes are switched to one by one and asked about; if the user cancels, stop and leave the remaining ones open.
     func closeOthers(keeping window: NSWindow, rightOnly: Bool) {
         guard let group = group(of: window), let index = group.windows.firstIndex(where: { $0 === window }) else { return }
         let targets = rightOnly ? Array(group.windows[(index + 1)...]) : group.windows.filter { $0 !== window }
@@ -161,7 +161,7 @@ final class WindowTabs {
             MainActor.assumeIsolated {
                 let tabs = WindowTabs.shared
                 if let token = tabs.sheetObservers.removeValue(forKey: key) { NotificationCenter.default.removeObserver(token) }
-                // 询问框收起后窗口要下一拍才真正关掉；还在就是用户取消了，停在它上面。
+                // After the sheet goes away the window only closes on the next tick; if it is still there, the user cancelled, so stop on it.
                 DispatchQueue.main.async {
                     guard tabs.group(of: window) == nil else { return }
                     tabs.closeInTurn(rest, thenSelect: keep)
@@ -171,7 +171,7 @@ final class WindowTabs {
         window.performClose(nil)
     }
 
-    /// ⇧⌘T：重新打开最近关掉的标签。文件已被删掉或移走的跳过，接着往前找；已经开着的系统只会把它切到前面。
+    /// ⇧⌘T: reopen the most recently closed tab. Files that were deleted or moved are skipped and the search continues; one that is already open is just brought to the front by the system.
     func reopenClosed() {
         while let url = closedURLs.popLast() {
             guard FileManager.default.fileExists(atPath: url.path) else { continue }
@@ -197,7 +197,7 @@ final class WindowTabs {
         if group.windows.isEmpty {
             groups.removeAll { $0 === group }
         } else if group.selected === window || group.selected == nil {
-            // 关的是正显示的标签：在它消失前把旁边那个摆出来，屏幕上始终有窗口，app 不会误判成全关了。
+            // The tab being closed is the visible one: bring its neighbour to the front before it disappears, so a window is always on screen and the app does not conclude everything was closed.
             let next = group.windows[min(index, group.windows.count - 1)]
             group.selected = next
             next.setFrame(window.frame, display: true)
@@ -223,7 +223,7 @@ final class WindowTabs {
     }
 }
 
-/// 一个窗口顶部标签条的数据。
+/// Data for the tab strip at the top of a window.
 @MainActor
 final class TabStripModel: ObservableObject {
     struct Tab: Equatable {
@@ -231,7 +231,7 @@ final class TabStripModel: ObservableObject {
         let title: String
         let edited: Bool
         let selected: Bool
-        /// 未保存过的新文档没有路径，右键菜单里的路径项置灰。
+        /// A new unsaved document has no path; the path items in the context menu are greyed out.
         let url: URL?
     }
 
@@ -245,7 +245,7 @@ final class TabStripModel: ObservableObject {
 
     init(window: NSWindow) {
         self.window = window
-        // didUpdate 很密，但只在内容变了才发布，代价是比较几个字符串；改名、未保存点、窗口宽度都靠它跟上。
+        // didUpdate fires very often, but it only publishes when the content changed, at the cost of comparing a few strings; renames, unsaved dots and window width all keep up through it.
         let names: [Notification.Name] = [WindowTabs.changed, NSWindow.didUpdateNotification, NSWindow.didResizeNotification]
         observers = names.map { name in
             NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
@@ -256,16 +256,16 @@ final class TabStripModel: ObservableObject {
         observers.append(center.addObserver(forName: NSWindow.didBecomeKeyNotification, object: window, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.becameKey = Date() }
         })
-        // 窗口失去焦点就不再改名（访达也是）。
+        // Stop renaming when the window loses focus (as Finder does).
         observers.append(center.addObserver(forName: NSWindow.didResignKeyNotification, object: window, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.pendingRename?.cancel() }
         })
         refresh()
     }
 
-    /// 照访达：点一下已选中的那个名字，停一个双击间隔还没有第二下，才进入改名；双击、点别的标签、窗口失焦都取消。
-    /// 点没选中的标签只是切过去。窗口刚被这一下点到前台（0.3 秒内）不算，免得切回 Nib 的那一下就进了改名。
-    /// 只用单击手势、靠事件的 clickCount 认双击：SwiftUI 同时挂单击和双击手势时，单击要等双击超时才触发，切标签会慢半拍。
+    /// Like Finder: clicking the name of the already selected tab and waiting one double-click interval with no second click starts renaming; double-click, clicking another tab or the window losing focus cancel it.
+    /// Clicking an unselected tab only switches to it. A click that just brought the window to the front (within 0.3 s) does not count, so switching back to Nib does not start a rename.
+    /// Use only a single-click gesture and detect double-clicks via the event's clickCount: when SwiftUI has both single- and double-click gestures, the single click waits for the double-click timeout, so tab switching would lag.
     func click(_ id: ObjectIdentifier) {
         pendingRename?.cancel()
         pendingRename = nil
@@ -298,15 +298,15 @@ final class TabStripModel: ObservableObject {
         if window.frame.width != windowWidth { windowWidth = window.frame.width }
     }
 
-    /// 标签条总宽：每个最多 180，且不超过窗口里居中能放下的宽度（两侧各让出模式切换那么宽，合计约 300）。
+    /// Total width of the tab strip: at most 180 per tab, and no more than fits centred in the window (each side leaves room for the mode switch, about 300 in total).
     var stripWidth: CGFloat {
-        // 只有一篇时只显示文档图标和文件名（照 Typora），给长文件名多留些宽度。
+        // With only one document, show just the document icon and file name (as Typora does), leaving extra width for long file names.
         if tabs.count <= 1 { return max(60, min(420, windowWidth - 300)) }
         let count = CGFloat(max(tabs.count, 1))
         return max(60, min(count * 180 + (count - 1) + TabMetrics.inset * 2, windowWidth - 300))
     }
 
-    /// 平分够宽（≥90）就平分；不够时选中的留 120 让标题看得清，其余平分剩下的，像 Safari 一样挤窄。
+    /// Split evenly if wide enough (≥90); otherwise the selected tab keeps 120 so its title is legible and the rest share what is left, squeezing narrower like Safari.
     func tabWidth(selected: Bool) -> CGFloat {
         let count = CGFloat(max(tabs.count, 1))
         let available = stripWidth - (count - 1) - TabMetrics.inset * 2
@@ -324,7 +324,7 @@ final class TabStripModel: ObservableObject {
         if let target = windows[id] { WindowTabs.shared.close(target) }
     }
 
-    /// 正在改名的标签。状态记在 WindowTabs 上：改的是没选中的标签时要先切过去，切过去后显示的是另一个窗口的标签条。
+    /// The tab being renamed. The state lives on WindowTabs: renaming an unselected tab first switches to it, after which the tab strip of another window is what is displayed.
     @Published private(set) var renaming: ObjectIdentifier?
 
     func beginRename(_ id: ObjectIdentifier) {
@@ -354,8 +354,8 @@ final class TabStripModel: ObservableObject {
     }
 }
 
-/// 标签条直接挂在标题栏上，不放进工具栏：工具栏按旧宽度判断放不下时，会把它连同模式切换整个收进「»」，之后不再恢复。
-/// 挂在标题栏上宽度由自己算，永远放得下。
+/// The tab strip hangs directly on the title bar rather than in the toolbar: when the toolbar judges from an old width that it does not fit, it collapses the strip together with the mode switch into "»" and never restores it.
+/// On the title bar its width is computed by itself, so it always fits.
 @MainActor
 enum TabStripInstaller {
     static let backdropID = NSUserInterfaceItemIdentifier("NibTitlebarBackdrop")
@@ -376,7 +376,7 @@ enum TabStripInstaller {
             host.centerYAnchor.constraint(equalTo: close.centerYAnchor),
             host.heightAnchor.constraint(equalToConstant: TabMetrics.height + TabMetrics.inset * 2),
         ])
-        // 宽度跟着标签条走，不多占：标题栏其余空白处还要能拖动窗口。
+        // Width follows the tab strip without taking more: the rest of the title bar must stay draggable.
         let width = host.widthAnchor.constraint(equalToConstant: model.stripWidth)
         width.isActive = true
         let subscription = model.objectWillChange.sink { [weak model] in
@@ -384,7 +384,7 @@ enum TabStripInstaller {
         }
         subscriptions[ObjectIdentifier(window)] = subscription
 
-        // 模式切换也挂在标题栏右侧，同理：放在工具栏里窗口一窄就会被收进「»」。
+        // The mode switch also hangs on the right of the title bar, for the same reason: in the toolbar it would be collapsed into "»" when the window narrows.
         let hover = TitlebarHover()
         let tracker = TitlebarTracker(hover: hover)
         tracker.frame = titlebar.bounds
@@ -393,7 +393,7 @@ enum TabStripInstaller {
         let modes = NSHostingView(rootView: TitlebarTools(controller: controller, hover: hover))
         modes.translatesAutoresizingMaskIntoConstraints = false
         titlebar.addSubview(modes)
-        // 侧栏开关放在红绿灯右边（照访达、Safari），同样平时隐藏。
+        // The sidebar toggle sits to the right of the traffic lights (as in Finder and Safari) and is likewise hidden normally.
         if let zoom = window.standardWindowButton(.zoomButton) {
             let toggle = NSHostingView(rootView: SidebarToggle(hover: hover, controller: controller))
             toggle.translatesAutoresizingMaskIntoConstraints = false
@@ -416,13 +416,13 @@ enum TabStripInstaller {
     }
 }
 
-/// 鼠标是否在标题栏上。右侧工具照 Typora：平时藏着，移到标题栏才出现（设置里可改成常驻）。
+/// Whether the mouse is over the title bar. The right-hand tools follow Typora: hidden normally, shown when the mouse moves onto the title bar (can be made permanent in Settings).
 @MainActor
 final class TitlebarHover: ObservableObject {
     @Published var inside = false
 }
 
-/// 铺满标题栏、垫在最底下的透明视图，只用来感知鼠标进出。上面盖着的标签条、按钮不影响判断。
+/// A transparent view filling the title bar and laid at the very bottom, used only to sense the mouse entering and leaving. The tab strip and buttons above it do not affect the check.
 final class TitlebarTracker: NSView {
     let hover: TitlebarHover
 
@@ -440,8 +440,8 @@ final class TitlebarTracker: NSView {
     override func mouseExited(with event: NSEvent) { hover.inside = false }
 }
 
-/// 标题栏右侧一组：字数、大纲、编辑开关（11-19 Felix 定：三段模式切换缩成一个开关，源码模式走 ⌘/ 和菜单，照 Typora 的简洁）。
-/// 平时藏起来，鼠标进标题栏或面板开着时才出现（照 Typora）。
+/// The group on the right of the title bar: word count, outline, edit toggle. Source mode is reached via ⌘/ and the menu, keeping the title bar simple.
+/// Hidden normally; shown only when the mouse enters the title bar or a panel is open.
 struct TitlebarTools: View {
     @ObservedObject var controller: EditorController
     @ObservedObject var hover: TitlebarHover
@@ -462,7 +462,7 @@ struct TitlebarTools: View {
     }
 }
 
-/// 标题栏左侧的侧栏开关；侧栏开着时常亮，关着时和右侧工具一样鼠标进标题栏才出现。
+/// The sidebar toggle on the left of the title bar; always lit while the sidebar is open, and when closed it appears only when the mouse enters the title bar, like the tools on the right.
 struct SidebarToggle: View {
     @ObservedObject var hover: TitlebarHover
     @ObservedObject var controller: EditorController
@@ -484,8 +484,8 @@ struct SidebarToggle: View {
     }
 }
 
-/// 编辑开关：阅读时点它进编辑，编辑或源码时点它回阅读；处在编辑或源码时按钮垫底色表示「开着」。
-/// 源码模式时图标换成源码符号，看得出现在是哪种。
+/// Edit toggle: while reading, click to enter edit mode; while editing or in source mode, click to return to reading. In edit or source mode the button has a background fill to show it is "on".
+/// In source mode the icon changes to a source symbol so you can tell which mode it is.
 struct EditToggle: View {
     @ObservedObject var controller: EditorController
 
@@ -503,9 +503,9 @@ struct EditToggle: View {
     }
 }
 
-/// 标签条的外形跟右边的模式切换对齐：同样的胶囊、同样的选中底色和高度。
+/// The tab strip's shape matches the mode switch on the right: same capsule, same selected fill and height.
 enum TabMetrics {
-    // 实测模式切换：外框 24 点，选中块 20 点。
+    // Measured from the mode switch: outer frame 24 pt, selected block 20 pt.
     static let height: CGFloat = 20
     static let inset: CGFloat = 2
 }
@@ -545,7 +545,7 @@ struct TabStrip: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    /// 标签之间的细竖线；挨着选中或悬停的标签就不画，和系统分段控件一样。
+    /// Thin vertical separator between tabs; not drawn next to the selected or hovered tab, like the system segmented control.
     private func separator(between left: TabStripModel.Tab, and right: TabStripModel.Tab) -> some View {
         let hidden = left.selected || right.selected || hovered == left.id || hovered == right.id
         return Rectangle()
@@ -557,7 +557,7 @@ struct TabStrip: View {
 private struct TabButton: View {
     let tab: TabStripModel.Tab
     let width: CGFloat
-    /// 只有一个标签时它只是标题，不画选中底色，也没有关闭按钮（关窗口用红灯或 ⌘W）。
+    /// With only one tab it is just a title: no selected fill and no close button (close the window with the red light or ⌘W).
     let single: Bool
     let hovering: Bool
     let select: () -> Void
@@ -577,11 +577,11 @@ private struct TabButton: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .foregroundStyle(tab.selected ? .primary : .secondary)
-                // 窄标签让出给关闭按钮的边距，太窄（<40）干脆不放字，免得只剩一个省略号。
+                // Narrow tabs give up margin for the close button; if too narrow (<40), draw no text at all rather than leave only an ellipsis.
                 .padding(.horizontal, min(24, width * 0.2))
                 .opacity(width < 40 ? 0 : 1)
             }
-            // 左边一格：悬停时是关闭，有未保存改动时是圆点，标题始终居中不跳。
+            // Left slot: close on hover, a dot when there are unsaved changes; the title stays centred and does not jump.
             HStack {
                 if hovering && !single {
                     CloseButton(action: close)
@@ -598,7 +598,7 @@ private struct TabButton: View {
                 .fill(Color.primary.opacity(single ? 0 : (tab.selected ? 0.1 : (hovering ? 0.05 : 0))))
         )
         .contentShape(Capsule(style: .continuous))
-        // 单击：没选中的切过去，已选中的停一会儿进改名（见 TabStripModel.click）。
+        // Click: an unselected tab is switched to; the selected one waits a moment and then enters rename (see TabStripModel.click).
         .onTapGesture(perform: select)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(tab.edited ? Text("\(tab.title), Edited") : Text(tab.title))
@@ -610,7 +610,7 @@ private struct TabButton: View {
     }
 }
 
-/// 只有一篇文档时的标题：文档图标加文件名，不画胶囊，和系统标题栏、Typora 一样。未保存时文件名后面跟「已编辑」。
+/// Title for a single document: document icon plus file name, no capsule, like the system title bar and Typora. When unsaved, the file name is followed by "Edited".
 private struct DocumentTitle: View {
     let tab: TabStripModel.Tab
     let renaming: Bool
@@ -641,7 +641,7 @@ private struct DocumentTitle: View {
     }
 }
 
-/// 标签右键菜单：关闭类在上，路径类在下，和 Safari 的标签菜单一个顺序。
+/// Tab context menu: close actions on top, path actions below, same order as Safari's tab menu.
 private struct TabMenu: View {
     let tab: TabStripModel.Tab
     let model: TabStripModel
@@ -687,7 +687,7 @@ private struct CloseButton: View {
     }
 }
 
-/// 和工具栏里模式切换一样的玻璃胶囊底。macOS 26 起用系统的 Liquid Glass，更早的系统退回半透明材质。
+/// Same glass capsule background as the mode switch in the toolbar. On macOS 26 and later it uses the system Liquid Glass; earlier systems fall back to a translucent material.
 struct GlassCapsule: ViewModifier {
     func body(content: Content) -> some View {
         if #available(macOS 26, *) {

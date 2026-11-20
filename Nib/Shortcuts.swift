@@ -1,15 +1,15 @@
 import SwiftUI
 
-/// 常用命令的快捷键可在设置里改，改完立即生效。
-/// 只管 Nib 自己的菜单命令：SwiftUI 每次刷新菜单都会按自己的模型写回快捷键，所以改动要进模型（EditorCommands 读这里），
-/// 不能直接改菜单项，也不能靠 NSUserKeyEquivalents（运行中改了不可靠，恢复默认要重开才回来，11-19 实测）。
-/// 打开、保存、关闭这类系统命令不在这里，要改用「系统设置 › 键盘 › App 快捷键」。
+/// Shortcuts for common commands can be changed in Settings and take effect immediately.
+/// Covers only Nib's own menu commands: every time SwiftUI refreshes the menu it writes shortcuts back from its own model, so changes must go into the model (EditorCommands reads it here),
+/// not edit menu items directly, nor rely on NSUserKeyEquivalents (changing it at runtime is unreliable, and restoring defaults only takes effect after a restart).
+/// System commands such as Open, Save and Close are not here; to change them use "System Settings › Keyboard › App Shortcuts".
 @MainActor
 final class ShortcutStore: ObservableObject {
     static let shared = ShortcutStore()
 
     struct Action: Identifiable {
-        /// 英文菜单标题，同时是本地化 key 和存盘 key。
+        /// English menu title, which is both the localization key and the key it is saved under.
         let title: String
         let defaultShortcut: Shortcut?
         var id: String { title }
@@ -52,7 +52,7 @@ final class ShortcutStore: ObservableObject {
     private static let storeKey = "shortcuts"
     private static let actions = Dictionary(uniqueKeysWithValues: groups.flatMap(\.actions).map { ($0.title, $0) })
 
-    /// 改过的命令：标题 → 快捷键写法。
+    /// Commands that were changed: title → shortcut notation.
     @Published private var custom: [String: String]
 
     private init() {
@@ -60,7 +60,7 @@ final class ShortcutStore: ObservableObject {
         Self.removeLegacyOverrides()
     }
 
-    /// 菜单上用的快捷键。
+    /// The shortcut used on the menu.
     func shortcut(_ title: String) -> KeyboardShortcut? {
         current(title)?.keyboardShortcut
     }
@@ -72,7 +72,7 @@ final class ShortcutStore: ObservableObject {
 
     func isCustom(_ title: String) -> Bool { custom[title] != nil }
 
-    /// nil 表示恢复默认。
+    /// nil means restore the default.
     func set(_ title: String, to shortcut: Shortcut?) {
         NibApp.log("shortcut \(title) = \(shortcut?.equivalent ?? "default")")
         custom[title] = shortcut == Self.actions[title]?.defaultShortcut ? nil : shortcut?.equivalent
@@ -84,12 +84,12 @@ final class ShortcutStore: ObservableObject {
         save()
     }
 
-    /// 已经占了这个快捷键的命令标题（当前界面语言），没有就是 nil。
+    /// Title of the command already using this shortcut (in the current UI language), or nil if none.
     func owner(of shortcut: Shortcut, except title: String) -> String? {
         if let other = Self.actions.keys.first(where: { $0 != title && current($0) == shortcut }) {
             return Self.localized(other)
         }
-        // 再查菜单栏上不归这里管的命令（打开、保存、关闭、⌘1 到 ⌘9 等）。
+        // Then check commands on the menu bar that are not managed here (Open, Save, Close, ⌘1 to ⌘9, etc.).
         guard let menu = NSApp.mainMenu else { return nil }
         let managed = Set(Self.actions.keys.map(Self.localized))
         var found: String?
@@ -115,7 +115,7 @@ final class ShortcutStore: ObservableObject {
         }
     }
 
-    /// 11-19 试过的版本把改动写进了 NSUserKeyEquivalents，清掉这些命令的条目，免得盖过这里的设置。
+    /// An earlier version wrote changes into NSUserKeyEquivalents; clear those commands' entries so they do not override the settings here.
     private static func removeLegacyOverrides() {
         let key = "NSUserKeyEquivalents"
         guard var all = UserDefaults.standard.dictionary(forKey: key) as? [String: String] else { return }
@@ -128,7 +128,7 @@ final class ShortcutStore: ObservableObject {
     }
 }
 
-/// 一个快捷键：按键字符加修饰键。存盘写法同 NSUserKeyEquivalents：^ ⌃、~ ⌥、$ ⇧、@ ⌘，后面跟按键。
+/// A shortcut: key character plus modifiers. Saved in the same notation as NSUserKeyEquivalents: ^ ⌃, ~ ⌥, $ ⇧, @ ⌘, followed by the key.
 struct Shortcut: Equatable {
     let key: String
     let modifiers: NSEvent.ModifierFlags
@@ -153,7 +153,7 @@ struct Shortcut: Equatable {
     init?(item: NSMenuItem) {
         guard !item.keyEquivalent.isEmpty else { return nil }
         var mods = item.keyEquivalentModifierMask.intersection([.command, .shift, .option, .control])
-        // 菜单里大写字母表示带 Shift。
+        // In menus an uppercase letter means Shift is included.
         var key = item.keyEquivalent
         if key.lowercased() != key { mods.insert(.shift); key = key.lowercased() }
         self.key = key
@@ -164,7 +164,7 @@ struct Shortcut: Equatable {
         let mods = event.modifierFlags.intersection([.command, .shift, .option, .control])
         guard let key = event.characters(byApplyingModifiers: [])?.lowercased(), !key.isEmpty else { return nil }
         let isFunctionKey = key.unicodeScalars.first.map { (0xF704...0xF70F).contains($0.value) } ?? false
-        // 不带 ⌘ 或 ⌃ 的按键会抢走正文里的普通输入，只允许功能键这样用。
+        // Keys without ⌘ or ⌃ would steal ordinary typing in the body, so only function keys may do this.
         guard mods.contains(.command) || mods.contains(.control) || isFunctionKey else { return nil }
         self.key = key
         self.modifiers = mods
@@ -215,7 +215,7 @@ struct Shortcut: Equatable {
     }
 }
 
-/// 设置里的「快捷键」页。
+/// The "Shortcuts" page in Settings.
 struct ShortcutsSettingsView: View {
     @ObservedObject private var store = ShortcutStore.shared
 
@@ -287,8 +287,8 @@ private struct ShortcutRecorder: View {
 
     private func handle(_ event: NSEvent) {
         let plain = event.modifierFlags.intersection([.command, .shift, .option, .control]).isEmpty
-        if event.keyCode == 53 && plain { stop(); return }          // Esc：放弃
-        if (event.keyCode == 51 || event.keyCode == 117) && plain { // ⌫：恢复默认
+        if event.keyCode == 53 && plain { stop(); return }          // Esc: abandon
+        if (event.keyCode == 51 || event.keyCode == 117) && plain { // ⌫: restore default
             store.set(title, to: nil)
             stop()
             return

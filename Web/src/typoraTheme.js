@@ -1,11 +1,11 @@
-// Typora 主题：主题 CSS 只在阅读模式（readView.js 渲染的 #write）里打开。
-// 编辑模式用 typoraEdit.js 从主题量出来的样式（标题、段落、引用、代码、表格、块间距……）；
-// 源码模式只借底色、文字色、链接色和字体。
+// Typora theme: the theme CSS is only enabled in read mode (the #write rendered by readView.js).
+// Edit mode uses styles measured from the theme by typoraEdit.js (headings, paragraphs, quotes, code, tables, block spacing, ...);
+// source mode only borrows the background, text colour, link colour and font.
 import { deriveEditCSS } from './typoraEdit.js'
 
-// 主题的底座：Typora 主题是写在宿主基础样式之上的，宿主要先给出一套合理默认值，主题才能只写差异。
-// 这里按 Typora 公开的主题文档（theme.typora.io）里的页面结构自行编写：变量名、#write、md-fences、
-// md-task-list-item、md-meta-block 这些名字是主题依赖的接口，取值和写法是 Nib 自己的。
+// Theme base: Typora themes are written on top of the host's base styles, so the host must provide sensible defaults for a theme to specify only its differences.
+// Written here from scratch against the page structure in Typora's public theme documentation (theme.typora.io): the variable names, #write, md-fences,
+// md-task-list-item and md-meta-block are interface names themes depend on; the values and wording are Nib's own.
 const BASE_CSS = `
 :root {
   --bg-color: #fff;
@@ -13,14 +13,14 @@ const BASE_CSS = `
   --select-text-bg-color: rgba(0, 113, 227, 0.25);
   --monospace: ui-monospace, "SF Mono", Menlo, monospace;
 }
-/* 根字号：主题大量用 rem，按 14px 算 */
+/* Root font size: themes use rem heavily, so assume 14px */
 html { font-size: 14px; background: var(--bg-color); color: var(--text-color); -webkit-font-smoothing: antialiased; text-size-adjust: 100%; }
 body { margin: 0; line-height: 1.43; }
 ::selection { background: var(--select-text-bg-color); }
 #write { position: relative; box-sizing: border-box; max-width: 860px; margin: 0 auto; padding: 32px 32px 96px; overflow-wrap: break-word; }
 #write > ul:first-child, #write > ol:first-child { margin-top: 2em; }
 
-/* 段落保留软换行；标题不在分页处断开 */
+/* Paragraphs preserve soft line breaks; headings do not break across pages */
 p { white-space: pre-wrap; }
 h1, h2, h3, h4, h5, h6 { break-inside: avoid; break-after: avoid-page; }
 hr { break-after: avoid; }
@@ -28,7 +28,7 @@ blockquote { margin: 1em 0; }
 a { cursor: pointer; }
 img { max-width: 100%; vertical-align: middle; image-orientation: from-image; }
 
-/* 表格包在 figure.table-figure 里，宽表横向滚动 */
+/* Tables are wrapped in figure.table-figure; wide tables scroll horizontally */
 figure { margin: 1em 0; padding: 0; overflow-x: auto; }
 figure > table, li > figure:last-child { margin-bottom: 0; }
 table { width: 100%; border-collapse: collapse; border-spacing: 0; text-align: left; }
@@ -36,14 +36,14 @@ table.md-table td { min-width: 2.5em; }
 thead { display: table-header-group; }
 tr { break-inside: avoid; }
 
-/* 代码：pre.md-fences 内是 CodeMirror 5 的行结构 */
+/* Code: inside pre.md-fences is CodeMirror 5's line structure */
 code, kbd, pre, samp, tt { font-family: var(--monospace); }
 pre.md-fences { display: block; position: relative; margin: 0 0 1em; padding: 6px 4px; font-size: 0.9rem; white-space: pre; text-align: left; background: inherit; break-inside: avoid; }
 .CodeMirror { height: auto; }
 .CodeMirror pre, .CodeMirror-line { margin: 0; padding: 0 4px; border: 0; background: none; font: inherit; line-height: inherit; }
 .CodeMirror-wrap pre.CodeMirror-line { white-space: pre-wrap; overflow-wrap: break-word; }
 
-/* 任务列表：勾选框挂在文字左侧 */
+/* Task list: the checkbox hangs to the left of the text */
 .md-task-list-item { position: relative; list-style: none; }
 .md-task-list-item > input { position: absolute; top: 0.3em; left: 0; margin: 0 0 0 -1.3em; border: none; }
 
@@ -81,7 +81,7 @@ export function createTyporaTheme({ post }) {
     document.body.classList.toggle('nib-themed-edit', !!css && !reading)
   }
 
-  /** 打开主题量一下 #write 的底色、文字、字体，交给编辑和源码模式用，量完按当前模式恢复。 */
+  /** Enables the theme and measures the #write background, text and font for edit and source modes, then restores state for the current mode. */
   function derive() {
     const root = document.documentElement
     const write = document.getElementById('write')
@@ -93,7 +93,7 @@ export function createTyporaTheme({ post }) {
     }
     const container = document.getElementById('nib-typora')
     const wasHidden = container.hidden
-    // 量之前去掉 Nib 自己按上一个主题涂的底色，不然往上找底色时找到的是上一个主题的（11-19 换主题后标题栏不变色）。
+    // Before measuring, remove the background Nib painted for the previous theme; otherwise the upward search for a background finds the old theme's and the title bar keeps the old colour.
     document.body.classList.remove('typora-active')
     container.hidden = false
     base.disabled = false
@@ -115,7 +115,7 @@ export function createTyporaTheme({ post }) {
     const accent = getComputedStyle(probeLink).color
     const sans = style.fontFamily
     const mono = getComputedStyle(probeCode).fontFamily
-    // 阅读层按 Nib 字号缩放过，量之前先去掉，量完还原。
+    // The read layer is scaled by Nib's font size; remove that before measuring and restore it afterwards.
     const zoom = container.style.zoom
     container.style.zoom = ''
     try {
@@ -134,12 +134,12 @@ export function createTyporaTheme({ post }) {
     const rgb = (c, a = 1) => `rgba(${c.r}, ${c.g}, ${c.b}, ${a})`
     root.style.setProperty('--t-bg', rgb(bg))
     root.style.setProperty('--t-text', rgb(text))
-    // 次要文字用主题文字色降透明度；深色底上降多了看不清，所以深色主题降得少些。
+    // Secondary text uses the theme text colour at reduced opacity; too much reduction is hard to read on dark backgrounds, so dark themes reduce less.
     const darkBg = luminance(bg) < 0.45
     root.style.setProperty('--t-text2', rgb(text, darkBg ? 0.8 : 0.7))
     root.style.setProperty('--t-text3', rgb(text, darkBg ? 0.62 : 0.5))
     root.style.setProperty('--t-accent', accent)
-    // 滚动条用主题文字色，跟着主题的色调走。
+    // The scrollbar uses the theme text colour so it follows the theme's tone.
     root.style.setProperty('--t-thumb', rgb(text, darkBg ? 0.4 : 0.32))
     root.style.setProperty('--t-thumb-strong', rgb(text, darkBg ? 0.6 : 0.5))
     root.style.setProperty('--t-sans', sans)
@@ -154,7 +154,7 @@ export function createTyporaTheme({ post }) {
     get active() {
       return !!css
     },
-    /** 换主题（null 表示不用）。同一份 CSS 再传一次不重来。 */
+    /** Switches theme (null means none). Passing the same CSS again does nothing. */
     setCSS(next) {
       next = next || null
       if (next === css) return false

@@ -1,6 +1,6 @@
-// 专注模式（F8）和打字机模式（F9），照 Typora。
-// 专注：光标所在的那一块（段落、标题、列表项、引用、代码块……）正常显示，其余调淡；只在编辑和源码模式生效。
-// 打字机：打字或用键盘移动光标时，光标所在行保持在屏幕中间；鼠标点击不跟着滚，免得点哪儿页面跳到哪儿。
+// Focus mode (F8) and typewriter mode (F9), as in Typora.
+// Focus: the block under the cursor (paragraph, heading, list item, quote, code block, ...) is shown normally and the rest is dimmed; only active in edit and source modes.
+// Typewriter: while typing or moving the cursor with the keyboard, the cursor line stays in the middle of the screen; mouse clicks do not scroll, so the page does not jump wherever you click.
 import { Decoration, EditorView, ViewPlugin } from '@codemirror/view'
 import { EditorState } from '@codemirror/state'
 import { syntaxTree } from '@codemirror/language'
@@ -8,7 +8,7 @@ import { syntaxTree } from '@codemirror/language'
 const flags = { focus: false, typewriter: false }
 const on = Decoration.line({ class: 'nib-focus-on' })
 
-/** 光标所在的块：从光标往上找，列表停在列表项，其余停在文档的直接子节点。 */
+/** The block under the cursor: search upward from the cursor, stopping at the list item for lists and at a direct child of the document otherwise. */
 function currentBlock(state) {
   const pos = state.selection.main.head
   let node = syntaxTree(state).resolveInner(pos, -1)
@@ -61,7 +61,7 @@ const typewriter = EditorState.transactionExtender.of((tr) => {
 
 export const focusModes = [focusPlugin, typewriter]
 
-/** 外壳设置变了就调这里；切换后让编辑器重算一次装饰。 */
+/** Called when shell settings change; after toggling, the editor recomputes decorations once. */
 export function setFocusModes(view, { focus, typewriter: tw }) {
   const changed = flags.focus !== !!focus || flags.typewriter !== !!tw
   flags.focus = !!focus

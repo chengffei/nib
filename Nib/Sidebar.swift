@@ -18,11 +18,29 @@ final class FileTree: ObservableObject {
     @Published private(set) var children: [URL: [Entry]] = [:]
     @Published var expanded = Set<URL>()
     private var observer: NSObjectProtocol?
+    private var changeObserver: NSObjectProtocol?
+    private var reloadScheduled = false
+
+    private func reloadSoon() {
+        guard !reloadScheduled else { return }
+        reloadScheduled = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            self?.reloadScheduled = false
+            self?.reload()
+        }
+    }
 
     init() {
         // Re-read when returning to Nib: if files changed in Finder or the terminal, the sidebar catches up.
         observer = NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.reload() }
+            MainActor.assumeIsolated {
+                self?.reload()
+                GitStatus.shared.refresh()
+            }
+        }
+        // Files created, deleted or renamed elsewhere (terminal, Claude) show up while Nib stays in the background.
+        changeObserver = NotificationCenter.default.addObserver(forName: .nibFilesChanged, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.reloadSoon() }
         }
     }
 
@@ -345,6 +363,20 @@ private struct FileRow: View {
     }
 
     private var isCurrent: Bool { current?.standardizedFileURL == entry.url.standardizedFileURL }
+    @ObservedObject private var git = GitStatus.shared
+
+    /// Git change dot: orange modified, green new, grey for a folder holding changes.
+    @ViewBuilder private var changeDot: some View {
+        if entry.isFolder {
+            if git.hasChanges(in: entry.url) { dot(.secondary.opacity(0.6), "Contains changes") }
+        } else if let change = git.change(of: entry.url) {
+            change == .added ? dot(Color.green, "New file") : dot(Color.orange, "Modified")
+        }
+    }
+
+    private func dot(_ color: some ShapeStyle, _ help: LocalizedStringKey) -> some View {
+        Circle().fill(color).frame(width: 6, height: 6).padding(.trailing, 4).help(help)
+    }
 
     private var label: some View {
         HStack(spacing: 6) {
@@ -358,6 +390,7 @@ private struct FileRow: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
             Spacer(minLength: 0)
+            changeDot
         }
         .padding(.vertical, 1)
         .padding(.horizontal, 4)

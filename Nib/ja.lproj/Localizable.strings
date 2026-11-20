@@ -137,3 +137,6 @@
 "Print…" = "プリント…";
 "Export as PDF…" = "PDFとして書き出す…";
 "Export as HTML…" = "HTMLとして書き出す…";
+"Contains changes" = "変更を含む";
+"New file" = "新規ファイル";
+"Modified" = "変更済み";

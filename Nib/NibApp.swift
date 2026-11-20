@@ -6,6 +6,7 @@ struct NibApp: App {
     static let launchedAt = Date()
     static let debug = ProcessInfo.processInfo.environment["NIB_DEBUG"] != nil
     @MainActor static var evalOnce = debug ? ProcessInfo.processInfo.environment["NIB_EVAL"] : nil
+    @MainActor static var actionOnce = true
     @MainActor static var finderOnce = debug ? (ProcessInfo.processInfo.environment["NIB_REVEAL"] ?? ProcessInfo.processInfo.environment["NIB_FINDER"]) : nil
 
     /// Debug output, written to standard error only under NIB_DEBUG.

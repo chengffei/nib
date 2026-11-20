@@ -464,6 +464,25 @@ window.nib = {
     }
   },
   getText: currentText,
+  /** Insert pasted images at the cursor as lines of their own (a link glued to other text would break that line's markdown); ignored in read mode. */
+  insertText(text) {
+    if (view.state.readOnly) return false
+    const { state } = view
+    const range = state.selection.main
+    const line = state.doc.lineAt(range.from)
+    const endLine = state.doc.lineAt(range.to)
+    const before = range.from > line.from ? '\n' : ''
+    const after = range.to < endLine.to ? '\n' : ''
+    const insert = before + text + after
+    view.dispatch({
+      changes: { from: range.from, to: range.to, insert },
+      selection: { anchor: range.from + before.length + text.length },
+      userEvent: 'input.paste',
+      scrollIntoView: true,
+    })
+    view.focus()
+    return true
+  },
   /** The heading at position index was clicked in the outline panel. */
   gotoHeading: (index) => outline.go(index),
   undo: () => undo(view),

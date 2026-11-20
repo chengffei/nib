@@ -143,6 +143,13 @@ struct EditorView: NSViewRepresentable {
                         else { controller?.finder = env == "text" ? .text : .files }
                     }
                 }
+                // For debugging: NIB_ACTION=paste sends Paste through the responder chain, as the menu does.
+                if NibApp.debug, let action = ProcessInfo.processInfo.environment["NIB_ACTION"], NibApp.actionOnce {
+                    NibApp.actionOnce = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                        if action == "paste" { NSApp.sendAction(#selector(NSText.paste(_:)), to: nil, from: nil) }
+                    }
+                }
                 if let script = NibApp.evalOnce {
                     NibApp.evalOnce = nil
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak controller] in controller?.run(script) }
@@ -173,6 +180,20 @@ struct EditorView: NSViewRepresentable {
             default:
                 break
             }
+        }
+
+        /// ⌘V with an image on the clipboard: store it next to the document and insert a link. False means paste normally.
+        func pasteImage() -> Bool {
+            guard controller.mode != .read else { return false }
+            do {
+                guard let markdown = try ImagePaste.markdown(from: .general, documentURL: controller.fileURL, text: text.wrappedValue)
+                else { return false }
+                NibApp.log("paste image \(markdown)")
+                host?.webView?.send("nib.insertText(text)", ["text": markdown])
+            } catch {
+                if let window = host?.window { NSAlert(error: error).beginSheetModal(for: window) } else { NSApp.presentError(error) }
+            }
+            return true
         }
 
         /// Hand URLs to the browser; relative links to other md files open in a new tab; for other files only viewable types are let through, the rest are revealed in Finder.
@@ -286,6 +307,18 @@ final class EditorWebView: WKWebView {
             return
         }
         callAsyncJavaScript(script, arguments: arguments, in: nil, in: .page)
+    }
+
+    /// WKWebView implements paste: without declaring it, so this replaces it at the Objective-C level and calls the original for normal pastes.
+    @objc func paste(_ sender: Any?) {
+        if target?.pasteImage() == true { return }
+        Self.callWebKit(#selector(NSText.paste(_:)), on: self, sender)
+    }
+
+    private static func callWebKit(_ selector: Selector, on view: WKWebView, _ sender: Any?) {
+        guard let method = class_getInstanceMethod(WKWebView.self, selector) else { return }
+        typealias Command = @convention(c) (AnyObject, Selector, Any?) -> Void
+        unsafeBitCast(method_getImplementation(method), to: Command.self)(view, selector, sender)
     }
 
     fileprivate func receive(_ type: String, _ body: [String: Any]) {

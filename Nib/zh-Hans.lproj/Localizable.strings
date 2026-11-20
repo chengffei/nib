@@ -48,8 +48,6 @@
 "Follow System" = "跟随系统";
 "Takes effect after you reopen Nib." = "重新打开 Nib 后生效。";
 "Restore Defaults" = "恢复默认";
-"New Tab" = "新建标签页";
-"Reopen Closed Tab" = "重新打开关闭的标签页";
 "Close Tab" = "关闭标签页";
 "Editing" = "编辑";
 "Source Mode" = "源码模式";
@@ -68,7 +66,6 @@
 "Themes Folder…" = "主题文件夹…";
 
 /* 快捷键设置 */
-"General" = "通用";
 "Shortcuts" = "快捷键";
 "File" = "文件";
 "View" = "显示";
@@ -104,3 +101,27 @@
 "Show Outline" = "显示大纲";
 "No headings" = "没有标题";
 "Done Editing" = "完成编辑";
+
+/* 专注、打字机、侧栏 */
+"Focus Mode" = "专注模式";
+"Typewriter Mode" = "打字机模式";
+"Show Sidebar" = "显示侧边栏";
+"Untitled" = "未命名";
+"untitled folder" = "未命名文件夹";
+"Rename “%@”" = "重新命名「%@」";
+"Rename" = "重新命名";
+"Cancel" = "取消";
+"“%@” has unsaved changes." = "「%@」有未保存的更改。";
+"Save or close it before moving it to the Trash." = "请先存储或关闭它，再移到废纸篓。";
+"No folder" = "没有文件夹";
+"Open Folder…" = "打开文件夹…";
+"Follow Current Document" = "跟随当前文档";
+"New File" = "新建文件";
+"New Folder" = "新建文件夹";
+"Move to Trash" = "移到废纸篓";
+"Paragraph spacing" = "段落间距";
+"Workspace" = "工作区";
+"Add Folder to Workspace…" = "将文件夹添加到工作区…";
+"Remove Folder from Workspace" = "从工作区移除文件夹";
+"Close Workspace" = "关闭工作区";
+"Add" = "添加";

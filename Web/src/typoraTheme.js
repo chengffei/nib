@@ -5,7 +5,9 @@ import { deriveEditCSS } from './typoraEdit.js'
 
 // Typora 自己的基础样式（主题都是在它之上写的），这里只留主题普遍依赖的部分。
 const BASE_CSS = `
-html { font-size: 14px; -webkit-font-smoothing: antialiased; text-size-adjust: 100%; }
+:root { --bg-color: #ffffff; --text-color: #333333; --select-text-bg-color: #b5d6fc; }
+html { font-size: 14px; -webkit-font-smoothing: antialiased; text-size-adjust: 100%; background-color: var(--bg-color); color: var(--text-color); }
+::selection { background: var(--select-text-bg-color); }
 body { margin: 0; padding: 0; height: auto; line-height: 1.42857; }
 #write { max-width: 860px; margin: 0 auto; padding: 30px 30px 100px; position: relative; word-break: normal; overflow-wrap: break-word; }
 #write > ul:first-child, #write > ol:first-child { margin-top: 30px; }
@@ -70,11 +72,13 @@ export function createTyporaTheme({ post }) {
     if (!css || !write) {
       document.body.classList.remove('typora-active')
       edit.textContent = ''
-      for (const name of ['--t-bg', '--t-text', '--t-text2', '--t-text3', '--t-accent', '--t-sans', '--t-mono']) root.style.removeProperty(name)
+      for (const name of ['--t-bg', '--t-text', '--t-text2', '--t-text3', '--t-accent', '--t-sans', '--t-mono', '--t-thumb', '--t-thumb-strong']) root.style.removeProperty(name)
       return
     }
     const container = document.getElementById('nib-typora')
     const wasHidden = container.hidden
+    // 量之前去掉 Nib 自己按上一个主题涂的底色，不然往上找底色时找到的是上一个主题的（11-19 换主题后标题栏不变色）。
+    document.body.classList.remove('typora-active')
     container.hidden = false
     base.disabled = false
     theme.disabled = false
@@ -119,6 +123,9 @@ export function createTyporaTheme({ post }) {
     root.style.setProperty('--t-text2', rgb(text, darkBg ? 0.8 : 0.7))
     root.style.setProperty('--t-text3', rgb(text, darkBg ? 0.62 : 0.5))
     root.style.setProperty('--t-accent', accent)
+    // 滚动条用主题文字色，跟着主题的色调走。
+    root.style.setProperty('--t-thumb', rgb(text, darkBg ? 0.4 : 0.32))
+    root.style.setProperty('--t-thumb-strong', rgb(text, darkBg ? 0.6 : 0.5))
     root.style.setProperty('--t-sans', sans)
     root.style.setProperty('--t-mono', mono)
     document.body.classList.add('typora-active')

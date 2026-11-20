@@ -123,6 +123,29 @@ class ImageWidget extends WidgetType {
   }
 }
 
+/** 标题左边留白里的层级小标（照 Bear 2）。点它把光标放到行首，# 露出来，就能改层级。 */
+class LevelWidget extends WidgetType {
+  constructor(level) {
+    super()
+    this.level = level
+  }
+  eq(other) {
+    return other.level === this.level
+  }
+  toDOM() {
+    const box = document.createElement('span')
+    box.className = 'nib-hlevel'
+    box.setAttribute('aria-hidden', 'true')
+    const label = document.createElement('span')
+    label.textContent = `H${this.level}`
+    box.appendChild(label)
+    return box
+  }
+  ignoreEvent() {
+    return false
+  }
+}
+
 class HrWidget extends WidgetType {
   eq() {
     return true
@@ -234,11 +257,17 @@ function build(view) {
         if (name.startsWith('ATXHeading') || name.startsWith('SetextHeading')) {
           const level = name[name.length - 1]
           lineDeco(doc.lineAt(n.from).from, `nib-h nib-h${level}`)
+          if (!state.facet(reading)) decos.push(Decoration.widget({ widget: new LevelWidget(level), side: -1 }).range(doc.lineAt(n.from).from))
           return
         }
         if (name === 'HeaderMark') {
           const parent = n.node.parent
-          if (!parent || !parent.name.startsWith('ATXHeading') || touches(act, n.from, n.to)) return
+          if (!parent || !parent.name.startsWith('ATXHeading')) return
+          // 照 Bear：光标在标题行里也不露 #，只有光标碰到 # 本身（行首）才露；层级看左边留白里的「H2」小标。
+          let markEnd = n.to
+          while (markEnd < parent.to && /[ \t]/.test(doc.sliceString(markEnd, markEnd + 1))) markEnd++
+          const revealTo = n.from === parent.from ? markEnd : n.to
+          if (!state.facet(reading) && state.selection.ranges.some((r) => r.from <= revealTo && r.to >= n.from)) return
           if (n.from === parent.from) {
             let end = n.to
             while (end < parent.to && /[ \t]/.test(doc.sliceString(end, end + 1))) end++

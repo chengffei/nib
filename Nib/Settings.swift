@@ -88,6 +88,16 @@ final class AppSettings: ObservableObject {
     }
     /// 标题栏字数按钮显示哪一项："words"、"chars"、"lines"、"minutes"。
     @Published var wordCountUnit: String { didSet { UserDefaults.standard.set(wordCountUnit, forKey: "wordCountUnit") } }
+    /// 专注模式（F8）：光标所在块之外调淡。打字机模式（F9）：光标行停在屏幕中间。两个都推给网页。
+    /// 段落间距：块之间空行的高度，按行高的倍数（默认 0.75，照 Bear 偏紧）。
+    @Published var paragraphSpacing: Double { didSet { changed("paragraphSpacing", paragraphSpacing) } }
+    @Published var focusMode: Bool { didSet { changed("focusMode", focusMode) } }
+    @Published var typewriterMode: Bool { didSet { changed("typewriterMode", typewriterMode) } }
+    /// 文件树侧栏：开没开、宽度。
+    @Published var showSidebar: Bool { didSet { UserDefaults.standard.set(showSidebar, forKey: "showSidebar") } }
+    @Published var sidebarWidth: Double { didSet { UserDefaults.standard.set(sidebarWidth, forKey: "sidebarWidth") } }
+    /// 工作区：侧栏里固定显示的文件夹（照 VS Code 的多根工作区），所有窗口共用。空表示跟着当前文档所在文件夹。
+    @Published var workspaceFolders: [String] { didSet { UserDefaults.standard.set(workspaceFolders, forKey: "workspaceFolders") } }
     /// 标题栏右侧工具（字数、模式切换）常驻；关着时鼠标移到标题栏才出现。
     @Published var alwaysShowTools: Bool { didSet { UserDefaults.standard.set(alwaysShowTools, forKey: "alwaysShowTools") } }
     /// 阅读速度，每分钟多少词（一个汉字算一个词），算阅读时间用。
@@ -131,6 +141,14 @@ final class AppSettings: ObservableObject {
         restoreWindows = store.bool(forKey: "restoreWindows")
         language = store.string(forKey: "language") ?? Self.systemLanguage
         alwaysShowTools = store.bool(forKey: "alwaysShowTools")
+        paragraphSpacing = store.object(forKey: "paragraphSpacing") as? Double ?? 0.75
+        focusMode = store.bool(forKey: "focusMode")
+        typewriterMode = store.bool(forKey: "typewriterMode")
+        showSidebar = store.bool(forKey: "showSidebar")
+        sidebarWidth = store.object(forKey: "sidebarWidth") as? Double ?? 240
+        // 之前只能固定一个根目录（sidebarRoot），有的话并进工作区。
+        let legacyRoot = store.string(forKey: "sidebarRoot") ?? ""
+        workspaceFolders = store.stringArray(forKey: "workspaceFolders") ?? (legacyRoot.isEmpty ? [] : [legacyRoot])
         wordCountUnit = store.string(forKey: "wordCountUnit") ?? "words"
         readingSpeed = store.object(forKey: "readingSpeed") as? Int ?? 300
     }
@@ -219,6 +237,9 @@ final class AppSettings: ObservableObject {
             "defaultMode": openMode,
             "lang": Self.currentLanguage,
             "typoraCSS": typoraCSS ?? NSNull(),
+            "paragraphSpacing": paragraphSpacing,
+            "focusMode": focusMode,
+            "typewriterMode": typewriterMode,
         ]
     }
 
@@ -286,6 +307,7 @@ struct SettingsView: View {
                     ForEach(Self.families, id: \.self) { Text($0).tag($0) }
                 }
                 slider("Size", $settings.fontSize, AppSettings.fontSizeRange, 1) { "\(Int($0)) pt" }
+                slider("Paragraph spacing", $settings.paragraphSpacing, 0.25...1.5, 0.25) { String(format: "%.2g×", $0) }
             } footer: {
                 HStack(alignment: .firstTextBaseline) {
                     Text("Typora themes supported.").foregroundStyle(.secondary)

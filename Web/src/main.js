@@ -26,6 +26,7 @@ import { createReadView } from './readView.js'
 import { createTyporaTheme } from './typoraTheme.js'
 import { createWordCounter } from './wordCount.js'
 import { createOutline } from './outline.js'
+import { focusModes, setFocusModes } from './focusModes.js'
 import { tables } from './table.js'
 
 const lang = (name, alias, support) => LanguageDescription.of({ name, alias, support })
@@ -161,11 +162,13 @@ function applySettings(s) {
   set('--mono', s.monoFont)
   set('--fs', s.fontSize ? `${s.fontSize}px` : null)
   set('--lh', s.lineHeight)
+  set('--para', s.paragraphSpacing)
   defaultMode = ['edit', 'source'].includes(s.defaultMode) ? s.defaultMode : 'read'
   measureMono()
   // Typora 主题自己定字号；Nib 的字号设置在阅读模式里按比例缩放整页。
   reader.scroller.style.zoom = s.fontSize ? String(s.fontSize / 16) : ''
   if (typora.setCSS(s.typoraCSS)) syncReader()
+  setFocusModes(typeof view !== 'undefined' ? view : null, { focus: s.focusMode, typewriter: s.typewriterMode })
   if (typeof view !== 'undefined') view.requestMeasure()
 }
 
@@ -279,6 +282,7 @@ function makeState(doc) {
       highlightSelectionMatches(),
       previewPart.of(previewFor(mode)),
       readPart.of(readFor(mode)),
+      focusModes,
       keymap.of([
         { key: 'Mod-b', run: toggleWrap('**') },
         { key: 'Mod-i', run: toggleWrap('*') },

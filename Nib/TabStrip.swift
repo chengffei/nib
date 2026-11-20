@@ -239,6 +239,8 @@ final class TabStripModel: ObservableObject {
     @Published private(set) var windowWidth: CGFloat = 860
     private weak var window: NSWindow?
     private var windows: [ObjectIdentifier: NSWindow] = [:]
+    private var becameKey = Date.distantPast
+    private var pendingRename: DispatchWorkItem?
     nonisolated(unsafe) private var observers: [NSObjectProtocol] = []
 
     init(window: NSWindow) {
@@ -250,7 +252,34 @@ final class TabStripModel: ObservableObject {
                 MainActor.assumeIsolated { self?.refresh() }
             }
         }
+        let center = NotificationCenter.default
+        observers.append(center.addObserver(forName: NSWindow.didBecomeKeyNotification, object: window, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.becameKey = Date() }
+        })
+        // 窗口失去焦点就不再改名（访达也是）。
+        observers.append(center.addObserver(forName: NSWindow.didResignKeyNotification, object: window, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.pendingRename?.cancel() }
+        })
         refresh()
+    }
+
+    /// 照访达：点一下已选中的那个名字，停一个双击间隔还没有第二下，才进入改名；双击、点别的标签、窗口失焦都取消。
+    /// 点没选中的标签只是切过去。窗口刚被这一下点到前台（0.3 秒内）不算，免得切回 Nib 的那一下就进了改名。
+    /// 只用单击手势、靠事件的 clickCount 认双击：SwiftUI 同时挂单击和双击手势时，单击要等双击超时才触发，切标签会慢半拍。
+    func click(_ id: ObjectIdentifier) {
+        pendingRename?.cancel()
+        pendingRename = nil
+        guard let target = windows[id], let window else { return }
+        let clicks = NSApp.currentEvent?.clickCount ?? 1
+        NibApp.log("tab click count=\(clicks) selected=\(target === window)")
+        guard target === window else {
+            if clicks == 1 { select(id) }
+            return
+        }
+        guard clicks == 1, renaming == nil, window.isKeyWindow, Date().timeIntervalSince(becameKey) > 0.3 else { return }
+        let work = DispatchWorkItem { [weak self] in self?.beginRename(id) }
+        pendingRename = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + NSEvent.doubleClickInterval, execute: work)
     }
 
     deinit {
@@ -299,6 +328,9 @@ final class TabStripModel: ObservableObject {
     @Published private(set) var renaming: ObjectIdentifier?
 
     func beginRename(_ id: ObjectIdentifier) {
+        pendingRename?.cancel()
+        pendingRename = nil
+        NibApp.log("rename begin")
         guard let target = windows[id] else { return }
         WindowTabs.shared.renaming = target
         select(id)
@@ -361,6 +393,16 @@ enum TabStripInstaller {
         let modes = NSHostingView(rootView: TitlebarTools(controller: controller, hover: hover))
         modes.translatesAutoresizingMaskIntoConstraints = false
         titlebar.addSubview(modes)
+        // 侧栏开关放在红绿灯右边（照访达、Safari），同样平时隐藏。
+        if let zoom = window.standardWindowButton(.zoomButton) {
+            let toggle = NSHostingView(rootView: SidebarToggle(hover: hover, controller: controller))
+            toggle.translatesAutoresizingMaskIntoConstraints = false
+            titlebar.addSubview(toggle)
+            NSLayoutConstraint.activate([
+                toggle.leadingAnchor.constraint(equalTo: zoom.trailingAnchor, constant: 14),
+                toggle.centerYAnchor.constraint(equalTo: close.centerYAnchor),
+            ])
+        }
         NSLayoutConstraint.activate([
             modes.trailingAnchor.constraint(equalTo: titlebar.trailingAnchor, constant: -12),
             modes.centerYAnchor.constraint(equalTo: close.centerYAnchor),
@@ -420,6 +462,28 @@ struct TitlebarTools: View {
     }
 }
 
+/// 标题栏左侧的侧栏开关；侧栏开着时常亮，关着时和右侧工具一样鼠标进标题栏才出现。
+struct SidebarToggle: View {
+    @ObservedObject var hover: TitlebarHover
+    @ObservedObject var controller: EditorController
+    @ObservedObject private var settings = AppSettings.shared
+
+    var body: some View {
+        let visible = settings.alwaysShowTools || settings.showSidebar || hover.inside
+        TitlebarItem(active: settings.showSidebar, help: "Show Sidebar", action: { settings.showSidebar.toggle() }) {
+            Image(systemName: "sidebar.left")
+                .font(.system(size: 13))
+                .foregroundStyle(settings.showSidebar ? .primary : .secondary)
+        }
+        .accessibilityLabel(Text("Show Sidebar"))
+        .padding(TabMetrics.inset)
+        .modifier(GlassCapsule())
+        .opacity(visible ? 1 : 0)
+        .allowsHitTesting(visible)
+        .animation(.easeOut(duration: visible ? 0.12 : 0.25), value: visible)
+    }
+}
+
 /// 编辑开关：阅读时点它进编辑，编辑或源码时点它回阅读；处在编辑或源码时按钮垫底色表示「开着」。
 /// 源码模式时图标换成源码符号，看得出现在是哪种。
 struct EditToggle: View {
@@ -453,7 +517,8 @@ struct TabStrip: View {
     var body: some View {
         if model.tabs.count == 1, let tab = model.tabs.first {
             DocumentTitle(tab: tab, renaming: model.renaming == tab.id, finish: { model.finishRename(tab.id, to: $0) })
-                .onTapGesture(count: 2) { model.beginRename(tab.id) }
+                .contentShape(Rectangle())
+                .onTapGesture { model.click(tab.id) }
                 .contextMenu { TabMenu(tab: tab, model: model) }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
@@ -466,7 +531,7 @@ struct TabStrip: View {
             ForEach(Array(model.tabs.enumerated()), id: \.element.id) { index, tab in
                 if index > 0 { separator(between: model.tabs[index - 1], and: tab) }
                 TabButton(tab: tab, width: model.tabWidth(selected: tab.selected), single: model.tabs.count == 1, hovering: hovered == tab.id,
-                          select: { model.select(tab.id) }, close: { model.close(tab.id) },
+                          select: { model.click(tab.id) }, close: { model.close(tab.id) },
                           renaming: model.renaming == tab.id, rename: { model.beginRename(tab.id) },
                           finish: { model.finishRename(tab.id, to: $0) })
                     .contextMenu { TabMenu(tab: tab, model: model) }
@@ -533,8 +598,7 @@ private struct TabButton: View {
                 .fill(Color.primary.opacity(single ? 0 : (tab.selected ? 0.1 : (hovering ? 0.05 : 0))))
         )
         .contentShape(Capsule(style: .continuous))
-        // 双击改名（照访达和 Safari 标签组）；单击照常切换。
-        .onTapGesture(count: 2, perform: rename)
+        // 单击：没选中的切过去，已选中的停一会儿进改名（见 TabStripModel.click）。
         .onTapGesture(perform: select)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(tab.edited ? Text("\(tab.title), Edited") : Text(tab.title))

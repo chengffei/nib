@@ -57,6 +57,7 @@ struct EditorCommands: Commands {
     @FocusedObject private var controller: EditorController?
     /// 快捷键可在设置里改，改了菜单跟着刷新。
     @ObservedObject private var shortcuts = ShortcutStore.shared
+    @ObservedObject private var settings = AppSettings.shared
 
     var body: some Commands {
         // ⌘T 和浏览器一样开新标签：新文档窗口会被 WindowTabs 并进当前组。⌘N 照旧。
@@ -67,26 +68,34 @@ struct EditorCommands: Commands {
                 .keyboardShortcut(shortcuts.shortcut("Reopen Closed Tab"))
         }
         CommandGroup(replacing: .undoRedo) {
-            item("Undo", "nib.undo()")
-            item("Redo", "nib.redo()")
+            item("Undo", "nib.undo()", icon: "arrow.uturn.backward")
+            item("Redo", "nib.redo()", icon: "arrow.uturn.forward")
         }
         CommandGroup(after: .pasteboard) {
             Divider()
-            item("Find…", "nib.find()")
+            item("Find…", "nib.find()", icon: "magnifyingglass")
         }
         CommandGroup(before: .toolbar) {
             // 三种模式做成带勾的菜单项，当前模式打勾（HIG：有状态的命令显示状态，不用「切换」这种说不清方向的名字）。
-            modeItem("Read", .read) { controller?.setMode(.read) }
-            modeItem("Editing", .edit) { controller?.run("nib.toggleEdit()") }
-            modeItem("Source Mode", .source) { controller?.run("nib.toggleSource()") }
+            // 常用项带图标，照 macOS 26 系统菜单和 Typora。
+            modeItem("Read", .read, icon: "book") { controller?.setMode(.read) }
+            modeItem("Editing", .edit, icon: "square.and.pencil") { controller?.run("nib.toggleEdit()") }
+            modeItem("Source Mode", .source, icon: "chevron.left.forwardslash.chevron.right") { controller?.run("nib.toggleSource()") }
             Divider()
-            Button("Show Outline") { controller?.showOutline.toggle() }
+            settingToggle("Focus Mode", icon: "scope", isOn: $settings.focusMode)
+            settingToggle("Typewriter Mode", icon: "character.cursor.ibeam", isOn: $settings.typewriterMode)
+            Divider()
+            settingToggle("Show Sidebar", icon: "sidebar.left", isOn: $settings.showSidebar)
+            Button { controller?.showOutline.toggle() } label: { Label("Show Outline", systemImage: "list.bullet.indent") }
                 .keyboardShortcut(shortcuts.shortcut("Show Outline"))
                 .disabled(controller == nil)
             Divider()
-            Button("Zoom In") { AppSettings.shared.zoom(1) }.keyboardShortcut(shortcuts.shortcut("Zoom In"))
-            Button("Zoom Out") { AppSettings.shared.zoom(-1) }.keyboardShortcut(shortcuts.shortcut("Zoom Out"))
-            Button("Actual Size") { AppSettings.shared.zoom(0) }.keyboardShortcut(shortcuts.shortcut("Actual Size"))
+            Button { AppSettings.shared.zoom(0) } label: { Label("Actual Size", systemImage: "1.magnifyingglass") }
+                .keyboardShortcut(shortcuts.shortcut("Actual Size"))
+            Button { AppSettings.shared.zoom(1) } label: { Label("Zoom In", systemImage: "plus.magnifyingglass") }
+                .keyboardShortcut(shortcuts.shortcut("Zoom In"))
+            Button { AppSettings.shared.zoom(-1) } label: { Label("Zoom Out", systemImage: "minus.magnifyingglass") }
+                .keyboardShortcut(shortcuts.shortcut("Zoom Out"))
             Divider()
         }
         CommandGroup(before: .windowList) {
@@ -115,14 +124,22 @@ struct EditorCommands: Commands {
     }
 
     /// title 是英文菜单标题，既是本地化 key 也是快捷键设置的 key。
-    private func modeItem(_ title: String, _ mode: EditorMode, action: @escaping () -> Void) -> some View {
-        Toggle(LocalizedStringKey(title), isOn: Binding(get: { controller?.mode == mode }, set: { _ in action() }))
-            .keyboardShortcut(shortcuts.shortcut(title))
-            .disabled(controller == nil)
+    private func modeItem(_ title: String, _ mode: EditorMode, icon: String, action: @escaping () -> Void) -> some View {
+        Toggle(isOn: Binding(get: { controller?.mode == mode }, set: { _ in action() })) {
+            Label(LocalizedStringKey(title), systemImage: icon)
+        }
+        .keyboardShortcut(shortcuts.shortcut(title))
+        .disabled(controller == nil)
     }
 
-    private func item(_ title: String, _ script: String) -> some View {
-        Button(LocalizedStringKey(title)) { controller?.run(script) }
+    /// 存在设置里的开关（专注、打字机、侧栏），所有窗口一起变。
+    private func settingToggle(_ title: String, icon: String, isOn: Binding<Bool>) -> some View {
+        Toggle(isOn: isOn) { Label(LocalizedStringKey(title), systemImage: icon) }
+            .keyboardShortcut(shortcuts.shortcut(title))
+    }
+
+    private func item(_ title: String, _ script: String, icon: String) -> some View {
+        Button { controller?.run(script) } label: { Label(LocalizedStringKey(title), systemImage: icon) }
             .keyboardShortcut(shortcuts.shortcut(title))
             .disabled(controller == nil)
     }
@@ -134,8 +151,19 @@ struct DocumentView: View {
     @StateObject private var controller = EditorController()
     @ObservedObject private var settings = AppSettings.shared
 
+    @StateObject private var tree = FileTree()
+
     var body: some View {
-        EditorView(text: $text, baseDirectory: fileURL?.deletingLastPathComponent().path, controller: controller)
+        HStack(spacing: 0) {
+            if settings.showSidebar {
+                FileSidebar(documentURL: fileURL, tree: tree)
+                    .frame(width: settings.sidebarWidth)
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+                SidebarDivider()
+            }
+            EditorView(text: $text, baseDirectory: fileURL?.deletingLastPathComponent().path, controller: controller)
+        }
+        .animation(.easeOut(duration: 0.2), value: settings.showSidebar)
             .background(settings.backgroundColor)
             .frame(minWidth: 480, minHeight: 320)
             .focusedSceneObject(controller)

@@ -80,6 +80,16 @@ html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
 .nib .cm-line.nib-h4, .nib .cm-line.nib-h5, .nib .cm-line.nib-h6 { font-weight: 600; }
 .nib .cm-line.nib-h6 { color: var(--text2); }
 
+/* 标题层级小标：放在左边留白里，不占正文宽度。外层是零宽的行内块，跟着标题第一行的基线走（标题上有内边距、折行都不影响）。 */
+.nib .nib-hlevel { display: inline-block; position: relative; width: 0; height: 0; user-select: none; }
+.nib .nib-hlevel > span { position: absolute; right: 0; bottom: 0.2em; margin-right: 12px; font: 600 10px/1 var(--sans); letter-spacing: 0.02em;
+  white-space: nowrap; color: var(--text3); opacity: 0.75; cursor: text; }
+.nib .cm-line.nib-h:hover .nib-hlevel > span { opacity: 1; }
+
+/* 段落间距：块之间的空行压成这个高度（默认 0.75 行，偏紧，照 Bear）。正文字距略收。 */
+.nib .cm-line.nib-blank:not(.nib-cb):not(.nib-fm):not(.nib-mono) { height: calc(var(--para, 0.75) * var(--lh) * 1em); }
+.nib .cm-content { letter-spacing: -0.006em; }
+
 /* 行内 */
 .nib .nib-strong { font-weight: 600; }
 .nib .nib-em { font-style: italic; }
@@ -187,7 +197,16 @@ body.typora-reading .cm-editor { display: none !important; }
 ::highlight(nib-find-current) { background-color: rgba(255, 170, 0, 0.9); color: #000; }
 /* 编辑和源码模式借主题的底色、文字色、链接色和字体。 */
 body.nib.typora-active { --bg: var(--t-bg); --text: var(--t-text); --text2: var(--t-text2); --text3: var(--t-text3);
-  --accent: var(--t-accent); --sans: var(--t-sans); --mono: var(--t-mono); background: var(--t-bg); }
+  --accent: var(--t-accent); --sans: var(--t-sans); --mono: var(--t-mono); background: var(--t-bg);
+  --thumb: var(--t-thumb); --thumb-strong: var(--t-thumb-strong); }
 html:has(body.typora-active) { background: var(--t-bg); }
 :root[data-typora-dark="true"] body.typora-active { --fill: rgba(255, 255, 255, 0.07); --sep: rgba(255, 255, 255, 0.16); --panel: rgba(255, 255, 255, 0.06);
-  --thumb: rgba(255, 255, 255, 0.32); --thumb-strong: rgba(255, 255, 255, 0.5); --field: rgba(255, 255, 255, 0.08); --btn: rgba(255, 255, 255, 0.12); }
+  --field: rgba(255, 255, 255, 0.08); --btn: rgba(255, 255, 255, 0.12); }
+
+/* 专注模式：光标所在的块之外调淡（focusModes.js）。阅读模式不生效。 */
+body.nib-focus:not([data-mode="read"]) .cm-content > .cm-line,
+body.nib-focus:not([data-mode="read"]) .cm-content > .nib-table-wrap { opacity: 0.3; transition: opacity 0.2s ease; }
+body.nib-focus:not([data-mode="read"]) .cm-content > .cm-line.nib-focus-on { opacity: 1; }
+/* 打字机模式：底部留够半屏，最后几行也能停到中间。 */
+body.nib-typewriter .cm-content { padding-bottom: 50vh; }
+@media (prefers-reduced-motion: reduce) { body.nib-focus .cm-content > * { transition: none !important; } }

@@ -3,6 +3,7 @@
 import { Decoration, ViewPlugin, WidgetType } from '@codemirror/view'
 import { syntaxTree } from '@codemirror/language'
 import { Facet } from '@codemirror/state'
+import { t } from './i18n.js'
 
 /** 阅读模式：没有「正在编辑」的行，整篇都渲染。 */
 export const reading = Facet.define({ combine: (values) => values.some(Boolean) })
@@ -112,8 +113,7 @@ class ImageWidget extends WidgetType {
     img.addEventListener('error', () => {
       const note = document.createElement('span')
       note.className = 'nib-img-missing'
-      const zh = (window.__nibSettings?.lang || 'en').startsWith('zh')
-      note.textContent = `${zh ? '图片无法显示：' : 'Image unavailable: '}${this.alt || decodeURI(this.url.replace(/^nib-file:\/\/local/, ''))}`
+      note.textContent = `${t('Image unavailable: ')}${this.alt || decodeURI(this.url.replace(/^nib-file:\/\/local/, ''))}`
       img.replaceWith(note)
       view.requestMeasure()
     })

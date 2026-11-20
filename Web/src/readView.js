@@ -4,6 +4,7 @@
 import MarkdownIt from 'markdown-it'
 import { keepShortColumns } from './tableColumns.js'
 import { highlightCode, tagHighlighter, tags as t } from '@lezer/highlight'
+import { t as tr } from './i18n.js'
 
 // 代码块按 Typora（CodeMirror 5）的类名上色，主题里写的 .cm-s-inner .cm-keyword 之类才认得。
 const cm5 = tagHighlighter([
@@ -210,15 +211,14 @@ function createHtmlFind(scroller, root) {
       <button type="button" class="nib-find-button nib-find-done"></button>
     </div>`
   document.body.appendChild(bar)
-  const zh = (window.__nibSettings?.lang || 'en').startsWith('zh')
   const input = bar.querySelector('input')
   const count = bar.querySelector('.nib-find-count')
   const caseToggle = bar.querySelector('.nib-find-toggle')
-  input.placeholder = zh ? '查找' : 'Find'
-  bar.querySelector('.nib-find-done').textContent = zh ? '完成' : 'Done'
-  bar.querySelector('[data-step="-1"]').title = zh ? '上一个' : 'Previous'
-  bar.querySelector('[data-step="1"]').title = zh ? '下一个' : 'Next'
-  caseToggle.title = zh ? '区分大小写' : 'Match case'
+  input.placeholder = tr('Find')
+  bar.querySelector('.nib-find-done').textContent = tr('Done')
+  bar.querySelector('[data-step="-1"]').title = tr('previous')
+  bar.querySelector('[data-step="1"]').title = tr('next')
+  caseToggle.title = tr('match case')
 
   let matches = []
   let current = -1
@@ -255,7 +255,7 @@ function createHtmlFind(scroller, root) {
       if (current >= 0) CSS.highlights.set('nib-find-current', new Highlight(matches[current]))
       else CSS.highlights.delete('nib-find-current')
     }
-    count.textContent = !input.value ? '' : matches.length === 0 ? (zh ? '无结果' : 'No results') : `${current + 1}/${matches.length}`
+    count.textContent = !input.value ? '' : matches.length === 0 ? tr('No results') : `${current + 1}/${matches.length}`
     if (scroll && current >= 0) {
       const rect = matches[current].getBoundingClientRect()
       const box = scroller.getBoundingClientRect()

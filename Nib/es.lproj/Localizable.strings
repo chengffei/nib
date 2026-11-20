@@ -1,0 +1,127 @@
+/* 菜单 */
+"Undo" = "Deshacer";
+"Redo" = "Rehacer";
+"Find…" = "Buscar…";
+"Toggle Editing" = "Activar/desactivar edición";
+"Toggle Source Mode" = "Activar/desactivar modo código fuente";
+"Zoom In" = "Ampliar";
+"Zoom Out" = "Reducir";
+"Actual Size" = "Tamaño real";
+"Show Tab %lld" = "Mostrar pestaña %lld";
+"Show Last Tab" = "Mostrar última pestaña";
+"New Tab" = "Nueva pestaña";
+"Reopen Closed Tab" = "Reabrir pestaña cerrada";
+"Close Other Tabs" = "Cerrar las demás pestañas";
+"Close Tabs to the Right" = "Cerrar pestañas a la derecha";
+"Copy Path" = "Copiar ruta";
+"Reveal in Finder" = "Mostrar en el Finder";
+
+/* 工具栏 */
+"Mode" = "Modo";
+"Read" = "Lectura";
+"Edit" = "Edición";
+"Source" = "Código fuente";
+
+/* 设置 */
+"Appearance" = "Apariencia";
+"Theme" = "Tema";
+"System" = "Sistema";
+"Light" = "Claro";
+"Dark" = "Oscuro";
+"Paper" = "Papel";
+"Text" = "Texto";
+"Font" = "Tipo de letra";
+"System Font" = "Tipo de letra del sistema";
+"Serif" = "Serif";
+"Size" = "Tamaño";
+"Line height" = "Altura de línea";
+"Line width" = "Ancho de línea";
+"Code" = "Código";
+"System Monospaced" = "Monoespaciado del sistema";
+"Documents" = "Documentos";
+"Open documents in" = "Abrir documentos en";
+"Reading mode" = "Modo lectura";
+"Editing mode" = "Modo edición";
+"Source mode" = "Modo código fuente";
+"General" = "General";
+"Language" = "Idioma";
+"Follow System" = "Igual que el sistema";
+"Takes effect after you reopen Nib." = "Se aplica al volver a abrir Nib.";
+"Restore Defaults" = "Restaurar valores por omisión";
+"Close Tab" = "Cerrar pestaña";
+"Editing" = "Edición";
+"Source Mode" = "Modo código fuente";
+"Show Previous Tab" = "Mostrar pestaña anterior";
+"Show Next Tab" = "Mostrar pestaña siguiente";
+"Go to Tab" = "Ir a la pestaña";
+"%@, Edited" = "%@, editado";
+"History" = "Historial";
+"Remember recent documents" = "Recordar documentos recientes";
+"Reopen windows when Nib starts" = "Reabrir ventanas al iniciar Nib";
+"Turning off recent documents also clears the existing list." = "Al desactivarlo también se borra la lista actual.";
+"Typora Theme" = "Tema de Typora";
+"None" = "Ninguno";
+"Open Themes Folder" = "Abrir carpeta de temas";
+"Typora themes supported." = "Compatible con temas en formato Typora: colócalos en la carpeta de temas.";
+"Themes Folder…" = "Carpeta de temas…";
+
+/* 快捷键设置 */
+"Shortcuts" = "Atajos";
+"File" = "Archivo";
+"View" = "Visualización";
+"Window" = "Ventana";
+"Open…" = "Abrir…";
+"Save" = "Guardar";
+"Close" = "Cerrar";
+"Type shortcut" = "Pulsa el atajo";
+"Used by “%@”" = "En uso por «%@»";
+"Click a shortcut, then press the new keys. Esc cancels, ⌫ restores the default." = "Haz clic en un atajo y pulsa las nuevas teclas. Esc cancela; ⌫ restaura el valor por omisión.";
+
+/* 字数统计 */
+"Word Count" = "Recuento de palabras";
+"Words" = "Palabras";
+"Characters" = "Caracteres";
+"Lines" = "Líneas";
+"Reading Time" = "Tiempo de lectura";
+"%lld words" = "%lld palabras";
+"%lld characters" = "%lld caracteres";
+"%lld lines" = "%lld líneas";
+"%lld min" = "%lld min";
+"Selection" = "Selección";
+"Document" = "Documento";
+"Reading speed" = "Velocidad de lectura";
+"%lld words/min" = "%lld palabras/min";
+"Used for the reading time in word count. One Chinese character counts as one word." = "Se usa para calcular el tiempo de lectura. Cada carácter chino cuenta como una palabra.";
+"— Edited" = "— Editado";
+"Always show word count and modes in title bar" = "Mostrar siempre el recuento y los modos en la barra de título";
+"Rename…" = "Renombrar…";
+"“%@” already exists." = "«%@» ya existe.";
+"Choose a different name." = "Elige otro nombre.";
+"Outline" = "Esquema";
+"Show Outline" = "Mostrar esquema";
+"No headings" = "Sin encabezados";
+"Done Editing" = "Terminar edición";
+
+/* 专注、打字机、侧栏 */
+"Focus Mode" = "Modo concentración";
+"Typewriter Mode" = "Modo máquina de escribir";
+"Show Sidebar" = "Mostrar barra lateral";
+"Untitled" = "Sin título";
+"untitled folder" = "carpeta sin título";
+"Rename “%@”" = "Renombrar «%@»";
+"Rename" = "Renombrar";
+"Cancel" = "Cancelar";
+"“%@” has unsaved changes." = "«%@» tiene cambios sin guardar.";
+"Save or close it before moving it to the Trash." = "Guárdalo o ciérralo antes de trasladarlo a la papelera.";
+"No folder" = "Ninguna carpeta";
+"Open Folder…" = "Abrir carpeta…";
+"Follow Current Document" = "Seguir el documento actual";
+"New File" = "Nuevo archivo";
+"New Folder" = "Nueva carpeta";
+"Move to Trash" = "Trasladar a la papelera";
+"Paragraph spacing" = "Espaciado de párrafo";
+"Workspace" = "Espacio de trabajo";
+"Add Folder to Workspace…" = "Añadir carpeta al espacio de trabajo…";
+"Remove Folder from Workspace" = "Quitar carpeta del espacio de trabajo";
+"Close Workspace" = "Cerrar espacio de trabajo";
+"Add" = "Añadir";

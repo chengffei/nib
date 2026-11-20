@@ -3,35 +3,51 @@
 // 源码模式只借底色、文字色、链接色和字体。
 import { deriveEditCSS } from './typoraEdit.js'
 
-// Typora 自己的基础样式（主题都是在它之上写的），这里只留主题普遍依赖的部分。
+// 主题的底座：Typora 主题是写在宿主基础样式之上的，宿主要先给出一套合理默认值，主题才能只写差异。
+// 这里按 Typora 公开的主题文档（theme.typora.io）里的页面结构自行编写：变量名、#write、md-fences、
+// md-task-list-item、md-meta-block 这些名字是主题依赖的接口，取值和写法是 Nib 自己的。
 const BASE_CSS = `
-:root { --bg-color: #ffffff; --text-color: #333333; --select-text-bg-color: #b5d6fc; --monospace: ui-monospace, "SF Mono", Menlo, monospace; }
-html { font-size: 14px; -webkit-font-smoothing: antialiased; text-size-adjust: 100%; background-color: var(--bg-color); color: var(--text-color); }
+:root {
+  --bg-color: #fff;
+  --text-color: #2b2b2b;
+  --select-text-bg-color: rgba(0, 113, 227, 0.25);
+  --monospace: ui-monospace, "SF Mono", Menlo, monospace;
+}
+/* 根字号：主题大量用 rem，按 14px 算 */
+html { font-size: 14px; background: var(--bg-color); color: var(--text-color); -webkit-font-smoothing: antialiased; text-size-adjust: 100%; }
+body { margin: 0; line-height: 1.43; }
 ::selection { background: var(--select-text-bg-color); }
-body { margin: 0; padding: 0; height: auto; line-height: 1.42857; }
-#write { max-width: 860px; margin: 0 auto; padding: 30px 30px 100px; position: relative; word-break: normal; overflow-wrap: break-word; }
-#write > ul:first-child, #write > ol:first-child { margin-top: 30px; }
-#write li > figure:last-child { margin-bottom: 0.5rem; }
-img { max-width: 100%; vertical-align: middle; image-orientation: from-image; }
+#write { position: relative; box-sizing: border-box; max-width: 860px; margin: 0 auto; padding: 32px 32px 96px; overflow-wrap: break-word; }
+#write > ul:first-child, #write > ol:first-child { margin-top: 2em; }
+
+/* 段落保留软换行；标题不在分页处断开 */
 p { white-space: pre-wrap; }
-h1, h2, h3, h4, h5, h6 { break-after: avoid-page; break-inside: avoid; orphans: 4; }
-a { cursor: pointer; }
-figure { overflow-x: auto; margin: 1.2em 0; max-width: calc(100% + 16px); padding: 0; }
-figure > table { margin: 0; }
-table { border-collapse: collapse; border-spacing: 0; width: 100%; overflow: auto; break-inside: auto; text-align: left; }
-table.md-table td { min-width: 32px; }
-tr { break-inside: avoid; break-after: auto; }
-thead { display: table-header-group; }
-code, kbd, pre, samp, tt { font-family: var(--monospace, ui-monospace, "SF Mono", Menlo, monospace); }
-pre.md-fences { font-size: 0.9rem; display: block; break-inside: avoid; text-align: left; overflow: visible; white-space: pre; background: inherit; position: relative; padding: 8px 4px 6px; margin-bottom: 15px; }
-.CodeMirror { height: auto; }
-.CodeMirror-wrap pre.CodeMirror-line { white-space: pre-wrap; word-wrap: break-word; word-break: normal; }
-.CodeMirror-line, .CodeMirror pre { margin: 0; padding: 0 4px; border: 0; background: transparent; font-family: inherit; font-size: inherit; line-height: inherit; }
-.md-task-list-item { position: relative; list-style-type: none; }
-.md-task-list-item > input { position: absolute; top: 0; left: 0; margin-left: -1.2em; margin-top: calc(1em - 10px); border: none; }
-.md-meta-block { white-space: pre-wrap; font-family: var(--monospace, ui-monospace, monospace); font-size: 0.85em; }
-blockquote { margin: 0.8em 0; }
+h1, h2, h3, h4, h5, h6 { break-inside: avoid; break-after: avoid-page; }
 hr { break-after: avoid; }
+blockquote { margin: 1em 0; }
+a { cursor: pointer; }
+img { max-width: 100%; vertical-align: middle; image-orientation: from-image; }
+
+/* 表格包在 figure.table-figure 里，宽表横向滚动 */
+figure { margin: 1em 0; padding: 0; overflow-x: auto; }
+figure > table, li > figure:last-child { margin-bottom: 0; }
+table { width: 100%; border-collapse: collapse; border-spacing: 0; text-align: left; }
+table.md-table td { min-width: 2.5em; }
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+
+/* 代码：pre.md-fences 内是 CodeMirror 5 的行结构 */
+code, kbd, pre, samp, tt { font-family: var(--monospace); }
+pre.md-fences { display: block; position: relative; margin: 0 0 1em; padding: 6px 4px; font-size: 0.9rem; white-space: pre; text-align: left; background: inherit; break-inside: avoid; }
+.CodeMirror { height: auto; }
+.CodeMirror pre, .CodeMirror-line { margin: 0; padding: 0 4px; border: 0; background: none; font: inherit; line-height: inherit; }
+.CodeMirror-wrap pre.CodeMirror-line { white-space: pre-wrap; overflow-wrap: break-word; }
+
+/* 任务列表：勾选框挂在文字左侧 */
+.md-task-list-item { position: relative; list-style: none; }
+.md-task-list-item > input { position: absolute; top: 0.3em; left: 0; margin: 0 0 0 -1.3em; border: none; }
+
+.md-meta-block { white-space: pre-wrap; font-family: var(--monospace); font-size: 0.85em; }
 `
 
 function parseColor(value) {

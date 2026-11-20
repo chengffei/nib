@@ -1,0 +1,127 @@
+/* 菜单 */
+"Undo" = "還原";
+"Redo" = "重做";
+"Find…" = "尋找…";
+"Toggle Editing" = "切換編輯";
+"Toggle Source Mode" = "切換原始碼模式";
+"Zoom In" = "放大";
+"Zoom Out" = "縮小";
+"Actual Size" = "實際大小";
+"Show Tab %lld" = "顯示第 %lld 個標籤頁";
+"Show Last Tab" = "顯示最後一個標籤頁";
+"New Tab" = "新增標籤頁";
+"Reopen Closed Tab" = "重新打開已關閉的標籤頁";
+"Close Other Tabs" = "關閉其他標籤頁";
+"Close Tabs to the Right" = "關閉右側標籤頁";
+"Copy Path" = "拷貝路徑";
+"Reveal in Finder" = "在 Finder 中顯示";
+
+/* 工具栏 */
+"Mode" = "模式";
+"Read" = "閱讀";
+"Edit" = "編輯";
+"Source" = "原始碼";
+
+/* 设置 */
+"Appearance" = "外觀";
+"Theme" = "主題";
+"System" = "跟隨系統";
+"Light" = "淺色";
+"Dark" = "深色";
+"Paper" = "暖紙";
+"Text" = "內文";
+"Font" = "字體";
+"System Font" = "系統字體";
+"Serif" = "襯線";
+"Size" = "字級";
+"Line height" = "行高";
+"Line width" = "版心寬度";
+"Code" = "程式碼";
+"System Monospaced" = "系統等寬";
+"Documents" = "文件";
+"Open documents in" = "打開文件時";
+"Reading mode" = "閱讀模式";
+"Editing mode" = "編輯模式";
+"Source mode" = "原始碼模式";
+"General" = "一般";
+"Language" = "語言";
+"Follow System" = "跟隨系統";
+"Takes effect after you reopen Nib." = "重新打開 Nib 後生效。";
+"Restore Defaults" = "回復預設值";
+"Close Tab" = "關閉標籤頁";
+"Editing" = "編輯";
+"Source Mode" = "原始碼模式";
+"Show Previous Tab" = "顯示上一個標籤頁";
+"Show Next Tab" = "顯示下一個標籤頁";
+"Go to Tab" = "前往標籤頁";
+"%@, Edited" = "%@，已編輯";
+"History" = "歷史記錄";
+"Remember recent documents" = "記錄最近打開的文件";
+"Reopen windows when Nib starts" = "啟動時恢復上次的視窗";
+"Turning off recent documents also clears the existing list." = "關閉「記錄最近打開的文件」會同時清除已有記錄。";
+"Typora Theme" = "Typora 主題";
+"None" = "不使用";
+"Open Themes Folder" = "打開主題檔案夾";
+"Typora themes supported." = "相容 Typora 主題格式，放進主題檔案夾即可使用。";
+"Themes Folder…" = "主題檔案夾…";
+
+/* 快捷键设置 */
+"Shortcuts" = "快速鍵";
+"File" = "檔案";
+"View" = "顯示方式";
+"Window" = "視窗";
+"Open…" = "打開…";
+"Save" = "儲存";
+"Close" = "關閉";
+"Type shortcut" = "按下快速鍵";
+"Used by “%@”" = "已被「%@」使用";
+"Click a shortcut, then press the new keys. Esc cancels, ⌫ restores the default." = "點一下快速鍵後按新組合鍵。Esc 放棄，⌫ 回復預設值。";
+
+/* 字数统计 */
+"Word Count" = "字數統計";
+"Words" = "詞數";
+"Characters" = "字元數";
+"Lines" = "行數";
+"Reading Time" = "閱讀時間";
+"%lld words" = "%lld 詞";
+"%lld characters" = "%lld 字元";
+"%lld lines" = "%lld 行";
+"%lld min" = "%lld 分鐘";
+"Selection" = "選取範圍";
+"Document" = "全文";
+"Reading speed" = "閱讀速度";
+"%lld words/min" = "每分鐘 %lld 詞";
+"Used for the reading time in word count. One Chinese character counts as one word." = "用於字數統計裡的閱讀時間，一個漢字算一個詞。";
+"— Edited" = "— 已編輯";
+"Always show word count and modes in title bar" = "標題列始終顯示字數和模式切換";
+"Rename…" = "重新命名…";
+"“%@” already exists." = "已有名為「%@」的檔案。";
+"Choose a different name." = "請換一個名稱。";
+"Outline" = "大綱";
+"Show Outline" = "顯示大綱";
+"No headings" = "沒有標題";
+"Done Editing" = "完成編輯";
+
+/* 专注、打字机、侧栏 */
+"Focus Mode" = "專注模式";
+"Typewriter Mode" = "打字機模式";
+"Show Sidebar" = "顯示側邊欄";
+"Untitled" = "未命名";
+"untitled folder" = "未命名檔案夾";
+"Rename “%@”" = "重新命名「%@」";
+"Rename" = "重新命名";
+"Cancel" = "取消";
+"“%@” has unsaved changes." = "「%@」有未儲存的變更。";
+"Save or close it before moving it to the Trash." = "請先儲存或關閉它，再丟到垃圾桶。";
+"No folder" = "沒有檔案夾";
+"Open Folder…" = "打開檔案夾…";
+"Follow Current Document" = "跟隨目前文件";
+"New File" = "新增檔案";
+"New Folder" = "新增檔案夾";
+"Move to Trash" = "丟到垃圾桶";
+"Paragraph spacing" = "段落間距";
+"Workspace" = "工作區";
+"Add Folder to Workspace…" = "將檔案夾加入工作區…";
+"Remove Folder from Workspace" = "從工作區移除檔案夾";
+"Close Workspace" = "關閉工作區";
+"Add" = "加入";

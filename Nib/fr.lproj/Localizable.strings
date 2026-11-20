@@ -1,0 +1,127 @@
+/* 菜单 */
+"Undo" = "Annuler";
+"Redo" = "Rétablir";
+"Find…" = "Rechercher…";
+"Toggle Editing" = "Activer/désactiver l’édition";
+"Toggle Source Mode" = "Activer/désactiver le mode source";
+"Zoom In" = "Agrandir";
+"Zoom Out" = "Réduire";
+"Actual Size" = "Taille réelle";
+"Show Tab %lld" = "Afficher l’onglet %lld";
+"Show Last Tab" = "Afficher le dernier onglet";
+"New Tab" = "Nouvel onglet";
+"Reopen Closed Tab" = "Rouvrir l’onglet fermé";
+"Close Other Tabs" = "Fermer les autres onglets";
+"Close Tabs to the Right" = "Fermer les onglets à droite";
+"Copy Path" = "Copier le chemin";
+"Reveal in Finder" = "Afficher dans le Finder";
+
+/* 工具栏 */
+"Mode" = "Mode";
+"Read" = "Lecture";
+"Edit" = "Édition";
+"Source" = "Source";
+
+/* 设置 */
+"Appearance" = "Apparence";
+"Theme" = "Thème";
+"System" = "Système";
+"Light" = "Clair";
+"Dark" = "Sombre";
+"Paper" = "Papier";
+"Text" = "Texte";
+"Font" = "Police";
+"System Font" = "Police du système";
+"Serif" = "Serif";
+"Size" = "Taille";
+"Line height" = "Hauteur de ligne";
+"Line width" = "Largeur de ligne";
+"Code" = "Code";
+"System Monospaced" = "Système à chasse fixe";
+"Documents" = "Documents";
+"Open documents in" = "Ouvrir les documents en";
+"Reading mode" = "Mode lecture";
+"Editing mode" = "Mode édition";
+"Source mode" = "Mode source";
+"General" = "Général";
+"Language" = "Langue";
+"Follow System" = "Comme le système";
+"Takes effect after you reopen Nib." = "Prend effet à la prochaine ouverture de Nib.";
+"Restore Defaults" = "Rétablir les réglages par défaut";
+"Close Tab" = "Fermer l’onglet";
+"Editing" = "Édition";
+"Source Mode" = "Mode source";
+"Show Previous Tab" = "Afficher l’onglet précédent";
+"Show Next Tab" = "Afficher l’onglet suivant";
+"Go to Tab" = "Aller à l’onglet";
+"%@, Edited" = "%@, modifié";
+"History" = "Historique";
+"Remember recent documents" = "Mémoriser les documents récents";
+"Reopen windows when Nib starts" = "Rouvrir les fenêtres au démarrage de Nib";
+"Turning off recent documents also clears the existing list." = "Désactiver cette option efface aussi la liste existante.";
+"Typora Theme" = "Thème Typora";
+"None" = "Aucun";
+"Open Themes Folder" = "Ouvrir le dossier des thèmes";
+"Typora themes supported." = "Compatible avec les thèmes au format Typora : placez-les dans le dossier des thèmes.";
+"Themes Folder…" = "Dossier des thèmes…";
+
+/* 快捷键设置 */
+"Shortcuts" = "Raccourcis";
+"File" = "Fichier";
+"View" = "Présentation";
+"Window" = "Fenêtre";
+"Open…" = "Ouvrir…";
+"Save" = "Enregistrer";
+"Close" = "Fermer";
+"Type shortcut" = "Saisissez le raccourci";
+"Used by “%@”" = "Utilisé par « %@ »";
+"Click a shortcut, then press the new keys. Esc cancels, ⌫ restores the default." = "Cliquez sur un raccourci, puis appuyez sur les nouvelles touches. Échap annule, ⌫ rétablit la valeur par défaut.";
+
+/* 字数统计 */
+"Word Count" = "Nombre de mots";
+"Words" = "Mots";
+"Characters" = "Caractères";
+"Lines" = "Lignes";
+"Reading Time" = "Temps de lecture";
+"%lld words" = "%lld mots";
+"%lld characters" = "%lld caractères";
+"%lld lines" = "%lld lignes";
+"%lld min" = "%lld min";
+"Selection" = "Sélection";
+"Document" = "Document";
+"Reading speed" = "Vitesse de lecture";
+"%lld words/min" = "%lld mots/min";
+"Used for the reading time in word count. One Chinese character counts as one word." = "Sert au calcul du temps de lecture. Un caractère chinois compte pour un mot.";
+"— Edited" = "— Modifié";
+"Always show word count and modes in title bar" = "Toujours afficher le nombre de mots et les modes dans la barre de titre";
+"Rename…" = "Renommer…";
+"“%@” already exists." = "« %@ » existe déjà.";
+"Choose a different name." = "Choisissez un autre nom.";
+"Outline" = "Plan";
+"Show Outline" = "Afficher le plan";
+"No headings" = "Aucun titre";
+"Done Editing" = "Terminer l’édition";
+
+/* 专注、打字机、侧栏 */
+"Focus Mode" = "Mode concentration";
+"Typewriter Mode" = "Mode machine à écrire";
+"Show Sidebar" = "Afficher la barre latérale";
+"Untitled" = "Sans titre";
+"untitled folder" = "nouveau dossier";
+"Rename “%@”" = "Renommer « %@ »";
+"Rename" = "Renommer";
+"Cancel" = "Annuler";
+"“%@” has unsaved changes." = "« %@ » contient des modifications non enregistrées.";
+"Save or close it before moving it to the Trash." = "Enregistrez-le ou fermez-le avant de le placer dans la corbeille.";
+"No folder" = "Aucun dossier";
+"Open Folder…" = "Ouvrir un dossier…";
+"Follow Current Document" = "Suivre le document actif";
+"New File" = "Nouveau fichier";
+"New Folder" = "Nouveau dossier";
+"Move to Trash" = "Placer dans la corbeille";
+"Paragraph spacing" = "Espacement des paragraphes";
+"Workspace" = "Espace de travail";
+"Add Folder to Workspace…" = "Ajouter un dossier à l’espace de travail…";
+"Remove Folder from Workspace" = "Retirer le dossier de l’espace de travail";
+"Close Workspace" = "Fermer l’espace de travail";
+"Add" = "Ajouter";

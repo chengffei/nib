@@ -1,0 +1,127 @@
+/* 菜单 */
+"Undo" = "取り消す";
+"Redo" = "やり直す";
+"Find…" = "検索…";
+"Toggle Editing" = "編集のオン/オフ";
+"Toggle Source Mode" = "ソースモードのオン/オフ";
+"Zoom In" = "拡大";
+"Zoom Out" = "縮小";
+"Actual Size" = "実際のサイズ";
+"Show Tab %lld" = "タブ %lld を表示";
+"Show Last Tab" = "最後のタブを表示";
+"New Tab" = "新規タブ";
+"Reopen Closed Tab" = "閉じたタブを再度開く";
+"Close Other Tabs" = "ほかのタブを閉じる";
+"Close Tabs to the Right" = "右側のタブを閉じる";
+"Copy Path" = "パスをコピー";
+"Reveal in Finder" = "Finderに表示";
+
+/* 工具栏 */
+"Mode" = "モード";
+"Read" = "閲覧";
+"Edit" = "編集";
+"Source" = "ソース";
+
+/* 设置 */
+"Appearance" = "外観";
+"Theme" = "テーマ";
+"System" = "システムに合わせる";
+"Light" = "ライト";
+"Dark" = "ダーク";
+"Paper" = "ペーパー";
+"Text" = "本文";
+"Font" = "フォント";
+"System Font" = "システムフォント";
+"Serif" = "セリフ";
+"Size" = "サイズ";
+"Line height" = "行の高さ";
+"Line width" = "行の幅";
+"Code" = "コード";
+"System Monospaced" = "システム等幅";
+"Documents" = "書類";
+"Open documents in" = "書類を開くモード";
+"Reading mode" = "閲覧モード";
+"Editing mode" = "編集モード";
+"Source mode" = "ソースモード";
+"General" = "一般";
+"Language" = "言語";
+"Follow System" = "システムに合わせる";
+"Takes effect after you reopen Nib." = "Nibを開き直すと反映されます。";
+"Restore Defaults" = "デフォルトに戻す";
+"Close Tab" = "タブを閉じる";
+"Editing" = "編集";
+"Source Mode" = "ソースモード";
+"Show Previous Tab" = "前のタブを表示";
+"Show Next Tab" = "次のタブを表示";
+"Go to Tab" = "タブに移動";
+"%@, Edited" = "%@、編集済み";
+"History" = "履歴";
+"Remember recent documents" = "最近使った書類を記憶";
+"Reopen windows when Nib starts" = "起動時にウインドウを再度開く";
+"Turning off recent documents also clears the existing list." = "「最近使った書類を記憶」をオフにすると、既存のリストも消去されます。";
+"Typora Theme" = "Typora テーマ";
+"None" = "なし";
+"Open Themes Folder" = "テーマフォルダを開く";
+"Typora themes supported." = "Typora 形式のテーマに対応。テーマフォルダに入れるだけで使えます。";
+"Themes Folder…" = "テーマフォルダ…";
+
+/* 快捷键设置 */
+"Shortcuts" = "ショートカット";
+"File" = "ファイル";
+"View" = "表示";
+"Window" = "ウインドウ";
+"Open…" = "開く…";
+"Save" = "保存";
+"Close" = "閉じる";
+"Type shortcut" = "ショートカットを入力";
+"Used by “%@”" = "「%@」で使用中";
+"Click a shortcut, then press the new keys. Esc cancels, ⌫ restores the default." = "ショートカットをクリックして新しいキーを押します。Esc で取消、⌫ でデフォルトに戻します。";
+
+/* 字数统计 */
+"Word Count" = "単語数";
+"Words" = "単語";
+"Characters" = "文字";
+"Lines" = "行";
+"Reading Time" = "読了時間";
+"%lld words" = "%lld 語";
+"%lld characters" = "%lld 文字";
+"%lld lines" = "%lld 行";
+"%lld min" = "%lld 分";
+"Selection" = "選択範囲";
+"Document" = "書類全体";
+"Reading speed" = "読む速さ";
+"%lld words/min" = "毎分 %lld 語";
+"Used for the reading time in word count. One Chinese character counts as one word." = "単語数の読了時間の計算に使います。漢字1文字を1語として数えます。";
+"— Edited" = "— 編集済み";
+"Always show word count and modes in title bar" = "タイトルバーに単語数とモードを常に表示";
+"Rename…" = "名称変更…";
+"“%@” already exists." = "「%@」はすでに存在します。";
+"Choose a different name." = "別の名前を選んでください。";
+"Outline" = "アウトライン";
+"Show Outline" = "アウトラインを表示";
+"No headings" = "見出しなし";
+"Done Editing" = "編集を終了";
+
+/* 专注、打字机、侧栏 */
+"Focus Mode" = "フォーカスモード";
+"Typewriter Mode" = "タイプライターモード";
+"Show Sidebar" = "サイドバーを表示";
+"Untitled" = "名称未設定";
+"untitled folder" = "名称未設定フォルダ";
+"Rename “%@”" = "「%@」の名前を変更";
+"Rename" = "名前を変更";
+"Cancel" = "キャンセル";
+"“%@” has unsaved changes." = "「%@」には保存されていない変更があります。";
+"Save or close it before moving it to the Trash." = "ゴミ箱に入れる前に保存するか閉じてください。";
+"No folder" = "フォルダなし";
+"Open Folder…" = "フォルダを開く…";
+"Follow Current Document" = "現在の書類に合わせる";
+"New File" = "新規ファイル";
+"New Folder" = "新規フォルダ";
+"Move to Trash" = "ゴミ箱に入れる";
+"Paragraph spacing" = "段落の間隔";
+"Workspace" = "ワークスペース";
+"Add Folder to Workspace…" = "フォルダをワークスペースに追加…";
+"Remove Folder from Workspace" = "フォルダをワークスペースから削除";
+"Close Workspace" = "ワークスペースを閉じる";
+"Add" = "追加";

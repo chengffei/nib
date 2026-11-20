@@ -24,6 +24,7 @@ import { swift } from '@codemirror/legacy-modes/mode/swift'
 import { links, livePreview, post, reading, resolveImage } from './livePreview.js'
 import { createReadView } from './readView.js'
 import { createTyporaTheme } from './typoraTheme.js'
+import { phrases } from './i18n.js'
 import { createWordCounter } from './wordCount.js'
 import { createOutline } from './outline.js'
 import { focusModes, setFocusModes } from './focusModes.js'
@@ -245,28 +246,6 @@ links.open = (href) => {
 
 // ---- 启动 ----
 
-// 查找条的文案。界面语言启动后不会变，所以建编辑器时定一次就够。
-const zhPhrases = {
-  Find: '查找',
-  Replace: '替换',
-  next: '下一个',
-  previous: '上一个',
-  all: '全部',
-  'match case': '区分大小写',
-  regexp: '正则',
-  'by word': '全词',
-  replace: '替换',
-  'replace all': '全部替换',
-  close: '关闭',
-  Done: '完成',
-  'No results': '无结果',
-  '$1 of $2': '$1/$2',
-  'current match': '当前匹配',
-  'on line': '在第',
-  'replaced $ matches': '已替换 $ 处',
-  'replaced match on line $': '已替换第 $ 行的匹配',
-}
-const phrases = (window.__nibSettings?.lang || 'en').startsWith('zh') ? zhPhrases : {}
 
 function makeState(doc) {
   return EditorState.create({

@@ -4,7 +4,7 @@ import { EditorView, keymap } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap, indentWithTab, redo, undo } from '@codemirror/commands'
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { HighlightStyle, LanguageDescription, StreamLanguage, ensureSyntaxTree, syntaxHighlighting } from '@codemirror/language'
-import { highlightSelectionMatches, openSearchPanel, search, searchKeymap } from '@codemirror/search'
+import { SearchQuery, findNext, highlightSelectionMatches, openSearchPanel, search, searchKeymap, setSearchQuery } from '@codemirror/search'
 import { tags as t } from '@lezer/highlight'
 import { attachScrollbar } from './scrollbar.js'
 import { createFindPanel } from './findPanel.js'
@@ -474,6 +474,25 @@ window.nib = {
   mode: () => mode,
   applySettings,
   find: () => (reader.visible ? reader.find() : openSearchPanel(view)),
+  /** From workspace search: open the find bar with the query and go to its first match on or after the given line (1-based). */
+  findAt(query, line) {
+    const { doc } = view.state
+    const from = doc.line(Math.min(Math.max(line, 1), doc.lines)).from
+    if (reader.visible) {
+      // The read layer is HTML: count the matches before that line in the source and step to the same index there.
+      const before = doc.sliceString(0, from).toLowerCase()
+      const needle = query.toLowerCase()
+      let nth = 0
+      for (let at = before.indexOf(needle); at >= 0; at = before.indexOf(needle, at + needle.length)) nth++
+      reader.findAt(query, nth)
+      return
+    }
+    view.dispatch({ effects: setSearchQuery.of(new SearchQuery({ search: query })), selection: { anchor: from } })
+    openSearchPanel(view)
+    findNext(view)
+    const head = view.state.selection.main.from
+    view.dispatch({ effects: EditorView.scrollIntoView(head, { y: 'center' }) })
+  },
   /** The shell records the scroll position before hibernating a tab; the read layer and the editor each scroll independently. */
   scrollTop: () => activeScroller().scrollTop,
   /** After the document is saved elsewhere or moved, relative image paths must be re-resolved against the new directory. */

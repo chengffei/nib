@@ -44,9 +44,12 @@ func after(_ seconds: Double, _ block: @escaping @MainActor () -> Void) {
 }
 
 after(1.2) {
-    webView.evaluateJavaScript("(function(){ \(script) })()") { result, error in
-        if let error { print("JS error:", error) }
-        if let result, !(result is NSNull) { print("JS result:", result) }
+    // callAsyncJavaScript: the script body may use await (e.g. wait a few frames for decorations to settle).
+    webView.callAsyncJavaScript(script, arguments: [:], in: nil, in: .page) { outcome in
+        switch outcome {
+        case .failure(let error): print("JS error:", error)
+        case .success(let result): if !(result is NSNull) { print("JS result:", result) }
+        }
         after(0.5) {
             webView.evaluateJavaScript("nib.getText()") { value, _ in
                 print("round-trip identical:", (value as? String) == text)

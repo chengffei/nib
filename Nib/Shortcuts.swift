@@ -25,6 +25,8 @@ final class ShortcutStore: ObservableObject {
         Group(title: "File", id: "file", actions: [
             Action(title: "New Tab", defaultShortcut: Shortcut("@t")),
             Action(title: "Reopen Closed Tab", defaultShortcut: Shortcut("$@t")),
+            Action(title: "Quick Open…", defaultShortcut: Shortcut("$@o")),
+            Action(title: "Search in Workspace…", defaultShortcut: Shortcut("$@f")),
         ]),
         Group(title: "Edit", id: "edit", actions: [
             Action(title: "Undo", defaultShortcut: Shortcut("@z")),

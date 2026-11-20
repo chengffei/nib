@@ -187,6 +187,7 @@ export function createReadView({ codeLanguages, resolveImage, openLink, attachSc
       return !scroller.hidden
     },
     find: () => find.open(),
+    findAt: (query, nth) => find.show(query, nth),
   }
 }
 
@@ -303,6 +304,16 @@ function createHtmlFind(scroller, root) {
       input.focus()
       input.select()
       if (input.value) search()
+    },
+    /** Open with a query and go to the nth match (0-based), used when coming from workspace search. */
+    show(query, nth) {
+      bar.hidden = false
+      input.value = query
+      search()
+      if (matches.length) {
+        current = Math.min(Math.max(nth, 0), matches.length - 1)
+        paint(true)
+      }
     },
     close,
   }

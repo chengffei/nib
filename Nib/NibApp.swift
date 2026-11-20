@@ -6,6 +6,7 @@ struct NibApp: App {
     static let launchedAt = Date()
     static let debug = ProcessInfo.processInfo.environment["NIB_DEBUG"] != nil
     @MainActor static var evalOnce = debug ? ProcessInfo.processInfo.environment["NIB_EVAL"] : nil
+    @MainActor static var finderOnce = debug ? (ProcessInfo.processInfo.environment["NIB_REVEAL"] ?? ProcessInfo.processInfo.environment["NIB_FINDER"]) : nil
 
     /// Debug output, written to standard error only under NIB_DEBUG.
     static func log(_ message: @autoclosure () -> String) {
@@ -67,6 +68,12 @@ struct EditorCommands: Commands {
             Button("Reopen Closed Tab") { WindowTabs.shared.reopenClosed() }
                 .keyboardShortcut(shortcuts.shortcut("Reopen Closed Tab"))
             Divider()
+            Button("Quick Open…") { controller?.finder = controller?.finder == .files ? nil : .files }
+                .keyboardShortcut(shortcuts.shortcut("Quick Open…"))
+                .disabled(controller == nil)
+            Button("Search in Workspace…") { controller?.finder = controller?.finder == .text ? nil : .text }
+                .keyboardShortcut(shortcuts.shortcut("Search in Workspace…"))
+                .disabled(controller == nil)
             Button("Add Folder to Workspace…") {
                 let folder = NSDocumentController.shared.currentDocument?.fileURL?.deletingLastPathComponent()
                 Workspace.chooseFolders(window: NSApp.keyWindow, startingAt: folder)
@@ -169,6 +176,16 @@ struct DocumentView: View {
             EditorView(text: $text, baseDirectory: fileURL?.deletingLastPathComponent().path, controller: controller)
         }
         .animation(.easeOut(duration: 0.2), value: settings.showSidebar)
+            .overlay(alignment: .top) {
+                if let kind = controller.finder {
+                    FinderPanel(kind: kind, current: fileURL) {
+                        controller.finder = nil
+                        if let webView = controller.webView { webView.window?.makeFirstResponder(webView) }
+                    }
+                    .id(kind)
+                    .padding(.top, 10)
+                }
+            }
             .background(settings.backgroundColor)
             .frame(minWidth: 480, minHeight: 320)
             .focusedSceneObject(controller)

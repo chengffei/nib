@@ -19,9 +19,14 @@ final class EditorController: ObservableObject {
     /// Whether the two title-bar panels are open (while open, the title-bar tools do not hide).
     @Published var showOutline = false
     @Published var showWordCount = false
+    /// Quick Open / Search in Workspace panel shown over this window (nil when closed).
+    @Published var finder: FinderKind?
+    /// The editor has loaded the current text (reset while waking from hibernation).
+    var ready = false
     weak var webView: EditorWebView?
     private var watcher: FileWatcher?
     private var watchedURL: URL?
+    var fileURL: URL? { watchedURL }
 
     func setMode(_ newMode: EditorMode) {
         guard newMode != mode else { return }
@@ -38,6 +43,10 @@ final class EditorController: ObservableObject {
     func watch(_ url: URL?) {
         guard url != watchedURL else { return }
         watchedURL = url
+        if let url {
+            Reveal.register(self, for: url)
+            if ready { Reveal.deliver(to: self, url: url) }
+        }
         watcher = url.map { url in FileWatcher(url: url) { [weak self] in self?.reloadFromDisk(url) } }
     }
 
@@ -122,7 +131,18 @@ struct EditorView: NSViewRepresentable {
                 if let mode = (body["mode"] as? String).flatMap(EditorMode.init) { controller.mode = mode }
                 NibApp.log("ready")
                 host?.didBecomeReady()
+                controller.ready = true
+                if let url = controller.fileURL { Reveal.deliver(to: controller, url: url) }
                 // For debugging: the script in NIB_EVAL runs once after the first document is ready, to test a real window without stealing the keyboard.
+                // For debugging: NIB_FINDER=files|text opens the search panel (query from NIB_QUERY); NIB_REVEAL=path:line:query opens a search hit.
+                if NibApp.debug, let env = NibApp.finderOnce {
+                    NibApp.finderOnce = nil
+                    let parts = env.split(separator: ":", maxSplits: 2).map(String.init)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak controller] in
+                        if parts.count == 3 { Reveal.open(URL(fileURLWithPath: parts[0]), query: parts[2], line: Int(parts[1]) ?? 1) }
+                        else { controller?.finder = env == "text" ? .text : .files }
+                    }
+                }
                 if let script = NibApp.evalOnce {
                     NibApp.evalOnce = nil
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak controller] in controller?.run(script) }
@@ -329,6 +349,7 @@ final class EditorHost: NSView {
         webView.target = coordinator
         self.webView = webView
         coordinator.controller.webView = webView
+        coordinator.controller.ready = false
         let text = coordinator.text.wrappedValue
         coordinator.lastText = text
         webView.send("nib.load(text, base, top)",

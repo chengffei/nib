@@ -154,6 +154,10 @@ export function createTyporaTheme({ post }) {
     get active() {
       return !!css
     },
+    /** Stylesheet for exports: Typora's base plus the theme. */
+    get exportCSS() {
+      return css ? BASE_CSS + '\n' + css : null
+    },
     /** Switches theme (null means none). Passing the same CSS again does nothing. */
     setCSS(next) {
       next = next || null

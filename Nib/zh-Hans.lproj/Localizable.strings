@@ -126,3 +126,14 @@
 "Remove Folder from Workspace" = "从工作区移除文件夹";
 "Close Workspace" = "关闭工作区";
 "Add" = "添加";
+"Quick Open…" = "快速打开…";
+"Search in Workspace…" = "在工作区中搜索…";
+"Go to File" = "转到文件";
+"Search in Workspace" = "在工作区中搜索";
+"Add a folder to the workspace to search it." = "将文件夹添加到工作区后即可搜索。";
+"No results" = "无结果";
+"Save the document before pasting images." = "粘贴图片前请先存储文稿。";
+"Images are stored in a folder next to the document, so it needs a location first." = "图片存放在文稿旁边的文件夹里，所以文稿需要先有位置。";
+"Print…" = "打印…";
+"Export as PDF…" = "导出为 PDF…";
+"Export as HTML…" = "导出为 HTML…";

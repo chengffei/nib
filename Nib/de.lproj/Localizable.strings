@@ -126,3 +126,14 @@
 "Remove Folder from Workspace" = "Ordner aus Arbeitsbereich entfernen";
 "Close Workspace" = "Arbeitsbereich schließen";
 "Add" = "Hinzufügen";
+"Quick Open…" = "Schnell öffnen …";
+"Search in Workspace…" = "Im Arbeitsbereich suchen …";
+"Go to File" = "Gehe zu Datei";
+"Search in Workspace" = "Im Arbeitsbereich suchen";
+"Add a folder to the workspace to search it." = "Füge einen Ordner zum Arbeitsbereich hinzu, um ihn zu durchsuchen.";
+"No results" = "Keine Ergebnisse";
+"Save the document before pasting images." = "Sichere das Dokument, bevor du Bilder einsetzt.";
+"Images are stored in a folder next to the document, so it needs a location first." = "Bilder werden in einem Ordner neben dem Dokument gespeichert, daher braucht es zuerst einen Speicherort.";
+"Print…" = "Drucken …";
+"Export as PDF…" = "Als PDF exportieren …";
+"Export as HTML…" = "Als HTML exportieren …";

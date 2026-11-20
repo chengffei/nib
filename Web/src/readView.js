@@ -94,6 +94,12 @@ export function createReadView({ codeLanguages, resolveImage, openLink, attachSc
   function render(text) {
     if (text === rendered) return
     rendered = text
+    const { source, meta } = split(text)
+    write.innerHTML = toHTML(source, meta)
+    decorate(write)
+  }
+
+  function split(text) {
     let source = text.replace(/\r\n?/g, '\n')
     let meta = ''
     const front = /^---[ \t]*\n([\s\S]*?)\n(---|\.\.\.)[ \t]*(\n|$)/.exec(source)
@@ -101,12 +107,22 @@ export function createReadView({ codeLanguages, resolveImage, openLink, attachSc
       meta = `<pre class="md-meta-block md-end-block">${escape(front[1])}</pre>`
       source = source.slice(front[0].length)
     }
-    write.innerHTML = meta + md.render(source)
-    decorate()
+    return { source, meta }
+  }
+
+  const toHTML = (source, meta) => meta + md.render(source)
+
+  /** The whole document as HTML with the Typora export structure, for Print and Export (never touches the visible layer). */
+  function renderHTML(text) {
+    const { source, meta } = split(text)
+    const root = document.createElement('div')
+    root.innerHTML = toHTML(source, meta)
+    decorate(root)
+    return root.innerHTML
   }
 
   // Adds structures present in Typora exports but missing from markdown-it: task lists, table wrappers, heading anchors, local image URLs.
-  function decorate() {
+  function decorate(write) {
     // Typora always wraps list item content in <p>, and theme spacing and task checkbox positioning assume it; markdown-it does not wrap in tight lists, so it is added here.
     for (const li of write.querySelectorAll('li')) {
       if (li.querySelector(':scope > p')) continue
@@ -127,7 +143,8 @@ export function createReadView({ codeLanguages, resolveImage, openLink, attachSc
       first.textContent = first.textContent.slice(match[0].length)
       const box = document.createElement('input')
       box.type = 'checkbox'
-      box.checked = done
+      // The attribute, not the property: exports serialise innerHTML, which only carries attributes.
+      if (done) box.setAttribute('checked', '')
       box.disabled = true
       li.insertBefore(box, li.firstChild)
       li.classList.add('md-task-list-item', 'task-list-item')
@@ -188,6 +205,7 @@ export function createReadView({ codeLanguages, resolveImage, openLink, attachSc
     },
     find: () => find.open(),
     findAt: (query, nth) => find.show(query, nth),
+    renderHTML,
   }
 }
 

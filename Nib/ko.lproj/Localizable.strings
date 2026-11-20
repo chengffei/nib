@@ -126,3 +126,14 @@
 "Remove Folder from Workspace" = "작업 공간에서 폴더 제거";
 "Close Workspace" = "작업 공간 닫기";
 "Add" = "추가";
+"Quick Open…" = "빠르게 열기…";
+"Search in Workspace…" = "작업 공간에서 검색…";
+"Go to File" = "파일로 이동";
+"Search in Workspace" = "작업 공간에서 검색";
+"Add a folder to the workspace to search it." = "작업 공간에 폴더를 추가하면 검색할 수 있습니다.";
+"No results" = "결과 없음";
+"Save the document before pasting images." = "이미지를 붙여넣기 전에 문서를 저장하십시오.";
+"Images are stored in a folder next to the document, so it needs a location first." = "이미지는 문서 옆 폴더에 저장되므로 먼저 문서의 위치가 필요합니다.";
+"Print…" = "프린트…";
+"Export as PDF…" = "PDF로 내보내기…";
+"Export as HTML…" = "HTML로 내보내기…";

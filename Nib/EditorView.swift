@@ -148,6 +148,11 @@ struct EditorView: NSViewRepresentable {
                     NibApp.actionOnce = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                         if action == "paste" { NSApp.sendAction(#selector(NSText.paste(_:)), to: nil, from: nil) }
+                        if action.hasPrefix("pdf:") || action.hasPrefix("html:") {
+                            let parts = action.split(separator: ":", maxSplits: 1).map(String.init)
+                            Exporter.run(parts[0] == "pdf" ? .pdf : .html, controller: self.controller, window: self.host?.window,
+                                         target: URL(fileURLWithPath: parts[1]))
+                        }
                         if action == "plain" { NSApp.sendAction(#selector(NSTextView.pasteAsPlainText(_:)), to: nil, from: nil) }
                     }
                 }

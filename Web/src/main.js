@@ -30,6 +30,7 @@ import { createOutline } from './outline.js'
 import { focusModes, setFocusModes } from './focusModes.js'
 import { tables } from './table.js'
 import { htmlToMarkdown, inCode } from './htmlPaste.js'
+import { EXPORT_CSS } from './exportStyle.js'
 
 const lang = (name, alias, support) => LanguageDescription.of({ name, alias, support })
 const legacy = (mode) => ({ language: StreamLanguage.define(mode), extension: StreamLanguage.define(mode) })
@@ -482,6 +483,16 @@ window.nib = {
     }
   },
   getText: currentText,
+  /** A standalone HTML page of the document for Print / Export: the Typora theme if one is selected, else Nib's export style.
+   *  Local images keep their nib-file URLs; the shell inlines them for HTML export. */
+  exportHTML(title) {
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
+    const css = typora.exportCSS || EXPORT_CSS
+    const lang = document.documentElement.lang || 'zh-CN'
+    return `<!doctype html>\n<html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">` +
+      `<title>${esc(title || '')}</title><style>${css}</style></head>` +
+      `<body class="typora-export"><div class="typora-export-content"><div id="write">${reader.renderHTML(currentText())}</div></div></body></html>`
+  },
   /** Paste and Match Style: the clipboard's plain text exactly as it is. */
   insertPlain(text) {
     if (view.state.readOnly) return false

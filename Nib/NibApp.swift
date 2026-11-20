@@ -80,6 +80,19 @@ struct EditorCommands: Commands {
                 Workspace.chooseFolders(window: NSApp.keyWindow, startingAt: folder)
             }
         }
+        CommandGroup(replacing: .printItem) {
+            Button("Print…") { export(.print) }
+                .keyboardShortcut(shortcuts.shortcut("Print…"))
+                .disabled(controller == nil)
+        }
+        CommandGroup(replacing: .importExport) {
+            Button("Export as PDF…") { export(.pdf) }
+                .keyboardShortcut(shortcuts.shortcut("Export as PDF…"))
+                .disabled(controller == nil)
+            Button("Export as HTML…") { export(.html) }
+                .keyboardShortcut(shortcuts.shortcut("Export as HTML…"))
+                .disabled(controller == nil)
+        }
         CommandGroup(replacing: .undoRedo) {
             item("Undo", "nib.undo()", icon: "arrow.uturn.backward")
             item("Redo", "nib.redo()", icon: "arrow.uturn.forward")
@@ -129,6 +142,11 @@ struct EditorCommands: Commands {
             }
             Divider()
         }
+    }
+
+    private func export(_ kind: Exporter.Kind) {
+        guard let controller else { return }
+        Exporter.run(kind, controller: controller, window: controller.webView?.window ?? NSApp.keyWindow)
     }
 
     @MainActor

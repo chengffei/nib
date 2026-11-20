@@ -126,3 +126,14 @@
 "Remove Folder from Workspace" = "從工作區移除檔案夾";
 "Close Workspace" = "關閉工作區";
 "Add" = "加入";
+"Quick Open…" = "快速打開…";
+"Search in Workspace…" = "在工作區中搜尋…";
+"Go to File" = "前往檔案";
+"Search in Workspace" = "在工作區中搜尋";
+"Add a folder to the workspace to search it." = "將檔案夾加入工作區後即可搜尋。";
+"No results" = "沒有結果";
+"Save the document before pasting images." = "貼上圖片前請先儲存文件。";
+"Images are stored in a folder next to the document, so it needs a location first." = "圖片存放在文件旁的檔案夾中，所以文件需要先有位置。";
+"Print…" = "列印…";
+"Export as PDF…" = "輸出為 PDF…";
+"Export as HTML…" = "輸出為 HTML…";

@@ -27,6 +27,9 @@ final class ShortcutStore: ObservableObject {
             Action(title: "Reopen Closed Tab", defaultShortcut: Shortcut("$@t")),
             Action(title: "Quick Open…", defaultShortcut: Shortcut("$@o")),
             Action(title: "Search in Workspace…", defaultShortcut: Shortcut("$@f")),
+            Action(title: "Export as PDF…", defaultShortcut: nil),
+            Action(title: "Export as HTML…", defaultShortcut: nil),
+            Action(title: "Print…", defaultShortcut: Shortcut("@p")),
         ]),
         Group(title: "Edit", id: "edit", actions: [
             Action(title: "Undo", defaultShortcut: Shortcut("@z")),

@@ -126,3 +126,14 @@
 "Remove Folder from Workspace" = "フォルダをワークスペースから削除";
 "Close Workspace" = "ワークスペースを閉じる";
 "Add" = "追加";
+"Quick Open…" = "クイックオープン…";
+"Search in Workspace…" = "ワークスペース内を検索…";
+"Go to File" = "ファイルへ移動";
+"Search in Workspace" = "ワークスペース内を検索";
+"Add a folder to the workspace to search it." = "フォルダをワークスペースに追加すると検索できます。";
+"No results" = "結果なし";
+"Save the document before pasting images." = "イメージをペーストする前に書類を保存してください。";
+"Images are stored in a folder next to the document, so it needs a location first." = "イメージは書類の隣のフォルダに保存されるため、先に書類の場所が必要です。";
+"Print…" = "プリント…";
+"Export as PDF…" = "PDFとして書き出す…";
+"Export as HTML…" = "HTMLとして書き出す…";

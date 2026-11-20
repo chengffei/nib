@@ -29,6 +29,7 @@ import { createWordCounter } from './wordCount.js'
 import { createOutline } from './outline.js'
 import { focusModes, setFocusModes } from './focusModes.js'
 import { tables } from './table.js'
+import { htmlToMarkdown, inCode } from './htmlPaste.js'
 
 const lang = (name, alias, support) => LanguageDescription.of({ name, alias, support })
 const legacy = (mode) => ({ language: StreamLanguage.define(mode), extension: StreamLanguage.define(mode) })
@@ -282,6 +283,23 @@ function makeState(doc) {
         blur() {
           if (pending) flush()
         },
+        // Rich text from web pages and documents becomes markdown; ⌥⇧⌘V (Paste and Match Style) is the plain-text escape hatch, handled by the shell.
+        paste(event, view) {
+          if (view.state.readOnly || inCode(view.state)) return false
+          const data = event.clipboardData
+          const html = data?.getData('text/html')
+          if (!html) return false
+          let markdown = null
+          try {
+            markdown = htmlToMarkdown(html, data.getData('text/plain'))
+          } catch (error) {
+            post({ type: 'log', text: `html paste failed: ${error}` })
+          }
+          if (markdown == null) return false
+          event.preventDefault()
+          view.dispatch(view.state.replaceSelection(markdown), { userEvent: 'input.paste', scrollIntoView: true })
+          return true
+        },
       }),
       EditorView.updateListener.of((update) => {
         if (window.__nibDebug) {
@@ -464,6 +482,15 @@ window.nib = {
     }
   },
   getText: currentText,
+  /** Paste and Match Style: the clipboard's plain text exactly as it is. */
+  insertPlain(text) {
+    if (view.state.readOnly) return false
+    view.dispatch(view.state.replaceSelection(text), { userEvent: 'input.paste', scrollIntoView: true })
+    view.focus()
+    return true
+  },
+  /** Test hook: what a paste of this HTML would insert. */
+  htmlToMarkdown,
   /** Insert pasted images at the cursor as lines of their own (a link glued to other text would break that line's markdown); ignored in read mode. */
   insertText(text) {
     if (view.state.readOnly) return false

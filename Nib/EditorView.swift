@@ -148,6 +148,7 @@ struct EditorView: NSViewRepresentable {
                     NibApp.actionOnce = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                         if action == "paste" { NSApp.sendAction(#selector(NSText.paste(_:)), to: nil, from: nil) }
+                        if action == "plain" { NSApp.sendAction(#selector(NSTextView.pasteAsPlainText(_:)), to: nil, from: nil) }
                     }
                 }
                 if let script = NibApp.evalOnce {
@@ -313,6 +314,12 @@ final class EditorWebView: WKWebView {
     @objc func paste(_ sender: Any?) {
         if target?.pasteImage() == true { return }
         Self.callWebKit(#selector(NSText.paste(_:)), on: self, sender)
+    }
+
+    /// Paste and Match Style: plain text only, never converted from HTML (the escape hatch for the HTML-to-markdown paste).
+    @objc func pasteAsPlainText(_ sender: Any?) {
+        guard let text = NSPasteboard.general.string(forType: .string) else { return }
+        send("nib.insertPlain(text)", ["text": text])
     }
 
     private static func callWebKit(_ selector: Selector, on view: WKWebView, _ sender: Any?) {

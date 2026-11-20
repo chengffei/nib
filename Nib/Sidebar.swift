@@ -2,7 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// File tree sidebar (requirement S2: browse the md files in a folder every week).
-/// When the workspace is empty the root follows the folder of the current document; once folders are added to the workspace it is split into sections by folder (see FileSidebar).
+/// Lists the workspace folders as sections (see FileSidebar); an empty workspace shows an empty state with an add button.
 /// Clicking an md opens it in the current tab group (switching to it if already open); other files are greyed out, and double-click hands them to the system default app.
 /// New, rename, move to Trash, reveal in Finder and copy path are in the context menu. Drag-to-move is not done.
 @MainActor

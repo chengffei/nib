@@ -96,7 +96,7 @@ final class AppSettings: ObservableObject {
     /// File tree sidebar: whether it is open, and its width.
     @Published var showSidebar: Bool { didSet { UserDefaults.standard.set(showSidebar, forKey: "showSidebar") } }
     @Published var sidebarWidth: Double { didSet { UserDefaults.standard.set(sidebarWidth, forKey: "sidebarWidth") } }
-    /// Workspace: folders pinned in the sidebar (like VS Code multi-root workspaces), shared by all windows. Empty means follow the folder of the current document.
+    /// Workspace: folders pinned in the sidebar (like VS Code multi-root workspaces), shared by all windows. Empty shows an empty state in the sidebar.
     @Published var workspaceFolders: [String] { didSet { UserDefaults.standard.set(workspaceFolders, forKey: "workspaceFolders") } }
     /// Tools on the right of the title bar (word count, mode switch) always visible; when off, they appear only when the mouse moves onto the title bar.
     @Published var alwaysShowTools: Bool { didSet { UserDefaults.standard.set(alwaysShowTools, forKey: "alwaysShowTools") } }

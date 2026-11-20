@@ -66,6 +66,11 @@ struct EditorCommands: Commands {
                 .keyboardShortcut(shortcuts.shortcut("New Tab"))
             Button("Reopen Closed Tab") { WindowTabs.shared.reopenClosed() }
                 .keyboardShortcut(shortcuts.shortcut("Reopen Closed Tab"))
+            Divider()
+            Button("Add Folder to Workspace…") {
+                let folder = NSDocumentController.shared.currentDocument?.fileURL?.deletingLastPathComponent()
+                Workspace.chooseFolders(window: NSApp.keyWindow, startingAt: folder)
+            }
         }
         CommandGroup(replacing: .undoRedo) {
             item("Undo", "nib.undo()", icon: "arrow.uturn.backward")

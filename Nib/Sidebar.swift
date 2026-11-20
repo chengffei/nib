@@ -181,7 +181,8 @@ final class FileTree: ObservableObject {
 }
 
 /// The sidebar itself. Like VS Code multi-root workspaces: once folders are added to the workspace it lists them as sections by folder (each collapsible);
-/// when the workspace is empty it lists only the folder of the current document. To add a folder: the "Add Folder to Workspace…" menu at the top, or drag a folder from Finder into the sidebar.
+/// when the workspace is empty it shows an empty state with an add button (it no longer follows the current document). To add a folder: the button, the menu at the top,
+/// File > Add Folder to Workspace…, or drag a folder from Finder into the sidebar.
 struct FileSidebar: View {
     let documentURL: URL?
     @ObservedObject var tree: FileTree
@@ -211,15 +212,6 @@ struct FileSidebar: View {
                 }
                 .listStyle(.sidebar)
                 .scrollContentBackground(.hidden)
-            } else if let root = documentFolder {
-                List {
-                    ForEach(tree.entries(of: root)) { entry in
-                        FileRow(entry: entry, tree: tree, current: documentURL, window: window)
-                    }
-                }
-                .listStyle(.sidebar)
-                .scrollContentBackground(.hidden)
-                .contextMenu { folderMenu(root) }
             } else {
                 VStack(spacing: 10) {
                     Text("No folder").foregroundStyle(.secondary)
@@ -247,17 +239,10 @@ struct FileSidebar: View {
                 }
                 Button("Close Workspace") { settings.workspaceFolders = [] }
             }
-            if workspace.isEmpty, let root = documentFolder {
-                Divider()
-                Button("New File") { tree.newFile(in: root) }
-                Button("New Folder") { tree.newFolder(in: root) }
-                Divider()
-                Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([root]) }
-            }
         } label: {
             HStack(spacing: 5) {
-                Image(systemName: workspace.isEmpty ? "folder" : "square.stack.3d.up").foregroundStyle(.secondary)
-                Text(workspace.isEmpty ? (documentFolder?.lastPathComponent ?? String(localized: "No folder")) : String(localized: "Workspace"))
+                Image(systemName: "square.stack.3d.up").foregroundStyle(.secondary)
+                Text("Workspace")
                     .fontWeight(.semibold)
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -293,28 +278,13 @@ struct FileSidebar: View {
         Button("New Folder") { tree.newFolder(in: folder) }
     }
 
-    private func add(_ urls: [URL]) {
-        var list = settings.workspaceFolders
-        for url in urls where !list.contains(url.path) { list.append(url.path) }
-        settings.workspaceFolders = list
-    }
+    private func add(_ urls: [URL]) { Workspace.add(urls) }
 
     private func remove(_ root: URL) {
         settings.workspaceFolders.removeAll { $0 == root.path }
     }
 
-    private func addFolder() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = true
-        panel.prompt = String(localized: "Add")
-        panel.directoryURL = documentFolder
-        let done: (NSApplication.ModalResponse) -> Void = { response in
-            if response == .OK { add(panel.urls) }
-        }
-        if let window { panel.beginSheetModal(for: window, completionHandler: done) } else { done(panel.runModal()) }
-    }
+    private func addFolder() { Workspace.chooseFolders(window: window, startingAt: documentFolder) }
 
     /// A folder dragged in from Finder is added to the workspace; if a file is dragged in, open it.
     private func dropFolders(_ providers: [NSItemProvider]) -> Bool {
@@ -335,8 +305,7 @@ struct FileSidebar: View {
     /// Whichever root the current document is under, expand the folders between it and the root so the current document is visible.
     private func revealCurrent() {
         guard let documentURL else { return }
-        let roots = workspace.isEmpty ? [documentFolder].compactMap { $0 } : workspace
-        for root in roots { tree.expanded.formUnion(Self.ancestors(of: documentURL, below: root)) }
+        for root in workspace { tree.expanded.formUnion(Self.ancestors(of: documentURL, below: root)) }
     }
 
     /// The folders at each level between the current document and the root.
@@ -447,4 +416,31 @@ private struct WindowReader: NSViewRepresentable {
         return view
     }
     func updateNSView(_ view: NSView, context: Context) {}
+}
+
+/// Workspace actions shared by the sidebar and the File menu.
+@MainActor
+enum Workspace {
+    static func add(_ urls: [URL]) {
+        let settings = AppSettings.shared
+        var list = settings.workspaceFolders
+        for url in urls where !list.contains(url.path) { list.append(url.path) }
+        settings.workspaceFolders = list
+    }
+
+    /// Pick folders and add them to the workspace; opens the sidebar so the result is visible.
+    static func chooseFolders(window: NSWindow?, startingAt folder: URL?) {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = true
+        panel.prompt = String(localized: "Add")
+        panel.directoryURL = folder
+        let done: (NSApplication.ModalResponse) -> Void = { response in
+            guard response == .OK else { return }
+            add(panel.urls)
+            AppSettings.shared.showSidebar = true
+        }
+        if let window { panel.beginSheetModal(for: window, completionHandler: done) } else { done(panel.runModal()) }
+    }
 }

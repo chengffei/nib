@@ -508,3 +508,10 @@ window.nib = {
 // scripts/webcheck.swift 走这条：正文在页面加载前就注入好了。正式的 app 等外壳来调 load。
 if (typeof window.__nibInitialText === 'string') load(window.__nibInitialText, window.__nibBaseDir)
 else post({ type: 'boot', ms: Math.round(performance.now()) })
+
+// 按住 ⌘ 时链接显示下划线，提示可点；松开、切走窗口即消失
+const setCmd = (on) => document.body.classList.toggle('nib-cmd', on)
+window.addEventListener('keydown', (event) => setCmd(event.metaKey), true)
+window.addEventListener('keyup', (event) => setCmd(event.metaKey), true)
+window.addEventListener('mousemove', (event) => { if (event.metaKey !== document.body.classList.contains('nib-cmd')) setCmd(event.metaKey) }, true)
+window.addEventListener('blur', () => setCmd(false))

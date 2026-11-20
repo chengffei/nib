@@ -5,7 +5,7 @@ import { deriveEditCSS } from './typoraEdit.js'
 
 // Typora 自己的基础样式（主题都是在它之上写的），这里只留主题普遍依赖的部分。
 const BASE_CSS = `
-:root { --bg-color: #ffffff; --text-color: #333333; --select-text-bg-color: #b5d6fc; }
+:root { --bg-color: #ffffff; --text-color: #333333; --select-text-bg-color: #b5d6fc; --monospace: ui-monospace, "SF Mono", Menlo, monospace; }
 html { font-size: 14px; -webkit-font-smoothing: antialiased; text-size-adjust: 100%; background-color: var(--bg-color); color: var(--text-color); }
 ::selection { background: var(--select-text-bg-color); }
 body { margin: 0; padding: 0; height: auto; line-height: 1.42857; }

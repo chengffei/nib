@@ -2,7 +2,9 @@
 :root {
   color-scheme: light dark;
   --fs: 16px;
-  --lh: 1.6;
+  --lh: 1.75;
+  /* 列表整体右移，圆点和文字各成一列（照 Bear） */
+  --li-shift: 0.75em;
   /* 版心跟窗口走：左右留白随窗口宽度在 40-140px 之间伸缩，正文占满其余宽度。 */
   --gutter: clamp(40px, 7vw, 140px);
   --mono-w: 0.602em;
@@ -75,8 +77,8 @@ html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
 /* 标题：层级只靠字号和字重 */
 .nib .cm-line.nib-h { font-weight: 700; letter-spacing: -0.012em; }
 .nib .cm-line.nib-h1 { font-size: 1.75em; line-height: 1.25; padding: 0.5em 0 0.2em; }
-.nib .cm-line.nib-h2 { font-size: 1.375em; line-height: 1.3; padding: 0.6em 0 0.15em; }
-.nib .cm-line.nib-h3 { font-size: 1.125em; line-height: 1.4; padding: 0.5em 0 0.1em; font-weight: 600; }
+.nib .cm-line.nib-h2 { font-size: 1.375em; line-height: 1.3; padding: 0.9em 0 0.3em; }
+.nib .cm-line.nib-h3 { font-size: 1.125em; line-height: 1.4; padding: 1em 0 0.3em; }
 .nib .cm-line.nib-h4, .nib .cm-line.nib-h5, .nib .cm-line.nib-h6 { font-weight: 600; }
 .nib .cm-line.nib-h6 { color: var(--text2); }
 
@@ -106,9 +108,9 @@ html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
 .nib .cm-line.nib-quote-2 { padding-left: 36px; background: linear-gradient(var(--sep), var(--sep)) 18px 0 / 3px 100% no-repeat; }
 
 /* 列表：前缀用等宽字体，悬挂缩进才能和折行对齐 */
-.nib .cm-line.nib-li { padding-left: calc(var(--nib-indent) * var(--mono-w)); text-indent: calc(var(--nib-indent) * var(--mono-w) * -1); }
+.nib .cm-line.nib-li { padding-left: calc(var(--nib-indent) * var(--mono-w) + var(--li-shift)); text-indent: calc(var(--nib-indent) * var(--mono-w) * -1); }
 .nib .nib-li-prefix { font-family: var(--mono); tab-size: 4; color: var(--text2); font-variant-numeric: tabular-nums; }
-.nib .nib-bullet { display: inline-block; text-align: center; text-indent: 0; color: var(--text2); font-family: var(--mono); }
+.nib .nib-bullet { display: inline-block; text-align: center; text-indent: 0; color: var(--accent); font-family: var(--mono); transform: scale(1.2); }
 .nib .nib-task { display: inline-block; text-indent: 0; text-align: left; font-family: var(--mono); }
 .nib .nib-task input { margin: 0; width: 0.95em; height: 0.95em; vertical-align: -0.1em; accent-color: var(--accent); }
 
@@ -139,6 +141,7 @@ html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
 
 /* 阅读模式：链接可直接点 */
 .nib[data-mode="read"] .nib-link { cursor: pointer; }
+.nib.nib-cmd .nib-link, .nib.nib-cmd #nib-typora a[href] { cursor: pointer; text-decoration: underline !important; text-underline-offset: 0.18em; }
 .nib[data-mode="read"] .nib-task input { pointer-events: none; }
 
 /* 查找条（findPanel.js）：照 macOS 查找栏，圆角搜索框、箭头、选项开关、「完成」。 */

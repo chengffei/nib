@@ -129,7 +129,7 @@ final class AppSettings: ObservableObject {
         bodyFont = store.string(forKey: "bodyFont") ?? Self.systemFont
         monoFont = store.string(forKey: "monoFont") ?? Self.systemFont
         fontSize = store.object(forKey: "fontSize") as? Double ?? 16
-        lineHeight = store.object(forKey: "lineHeight") as? Double ?? 1.6
+        lineHeight = store.object(forKey: "lineHeight") as? Double ?? 1.75
         contentWidth = store.object(forKey: "contentWidth") as? Double ?? 44
         // 旧版本只存了「是否进编辑」，没有新值时从它换算。
         openMode = store.string(forKey: "openMode") ?? (store.bool(forKey: "openInEdit") ? "edit" : "read")
@@ -158,7 +158,7 @@ final class AppSettings: ObservableObject {
         bodyFont = Self.systemFont
         monoFont = Self.systemFont
         fontSize = 16
-        lineHeight = 1.6
+        lineHeight = 1.75
         contentWidth = 44
         openMode = "read"
         typoraTheme = ""

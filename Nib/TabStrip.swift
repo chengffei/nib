@@ -40,6 +40,7 @@ final class WindowTabs {
     /// A new document window arrives: join the group currently in use, placed after the selected tab and stacked in the same spot.
     func adopt(_ window: NSWindow) {
         guard group(of: window) == nil else { return }
+        AppDelegate.showInDock()
         ExplicitSave.apply(to: window)
         window.tabbingMode = .disallowed
         // Switching tabs hides one window and shows another; the system's window pop-up animation would make it look like a new window opened.
@@ -204,6 +205,7 @@ final class WindowTabs {
         group.windows.remove(at: index)
         if group.windows.isEmpty {
             groups.removeAll { $0 === group }
+            if groups.isEmpty { AppDelegate.hideFromDockIfIdle() }
         } else if group.selected === window || group.selected == nil {
             // The tab being closed is the visible one: bring its neighbour to the front before it disappears, so a window is always on screen and the app does not conclude everything was closed.
             let next = group.windows[min(index, group.windows.count - 1)]

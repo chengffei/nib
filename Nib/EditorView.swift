@@ -155,6 +155,18 @@ struct EditorView: NSViewRepresentable {
                             Exporter.run(parts[0] == "pdf" ? .pdf : .html, controller: self.controller, window: self.host?.window,
                                          target: URL(fileURLWithPath: parts[1]))
                         }
+                        if action.hasPrefix("closeReopen:") {
+                            let path = String(action.dropFirst("closeReopen:".count))
+                            (NSApp.keyWindow ?? NSApp.windows.first { $0.isVisible && NSDocumentController.shared.document(for: $0) != nil })?.performClose(nil)
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                NibApp.log("policy after close \(NSApp.activationPolicy().rawValue)")
+                                NibApp.log("reopen start")
+                                NSDocumentController.shared.openDocument(withContentsOf: URL(fileURLWithPath: path), display: true) { _, _, _ in }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                    NibApp.log("policy after reopen \(NSApp.activationPolicy().rawValue) active=\(NSApp.isActive)")
+                                }
+                            }
+                        }
                         if action == "close" {
                             (NSApp.keyWindow ?? NSApp.windows.first { $0.isVisible && NSDocumentController.shared.document(for: $0) != nil })?.performClose(nil)
                         }

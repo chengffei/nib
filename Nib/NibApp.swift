@@ -47,8 +47,34 @@ struct NibApp: App {
 /// Keeps running after the last window closes (11-20 Felix 定, like TextEdit and Typora): a cold start takes about
 /// 830 ms because WebKit has to start its processes, opening into a running Nib about 120 ms. Idle cost: the shell
 /// (about 45 MB) plus one spare editor engine (about 39 MB), no CPU.
+/// With no windows Nib leaves the Dock and the ⌘Tab switcher (accessory policy, 11-22 Felix 定) and comes back as
+/// soon as a document opens. To quit it from there: open any document, then ⌘Q.
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+
+    /// Launching Nib again from Finder or Spotlight while it sits hidden: show it before SwiftUI puts up a window.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        Self.showInDock()
+        return true
+    }
+
+    @MainActor static func showInDock() {
+        guard NSApp.activationPolicy() != .regular else { return }
+        NSApp.setActivationPolicy(.regular)
+        // Switching back from accessory leaves the menu bar on the previous app until Nib is activated again.
+        NSApp.activate(ignoringOtherApps: true)
+        NibApp.log("dock: shown")
+    }
+
+    /// Called after a window closes; hides from the Dock only when no titled window is left (Settings counts).
+    @MainActor static func hideFromDockIfIdle() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            guard NSApp.activationPolicy() == .regular,
+                  !NSApp.windows.contains(where: { $0.isVisible && $0.styleMask.contains(.titled) }) else { return }
+            NSApp.setActivationPolicy(.accessory)
+            NibApp.log("dock: hidden")
+        }
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppSettings.applyHistory()

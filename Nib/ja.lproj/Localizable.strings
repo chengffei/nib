@@ -140,3 +140,5 @@
 "Contains changes" = "変更を含む";
 "New file" = "新規ファイル";
 "Modified" = "変更済み";
+"Keep running after all windows close" = "すべてのウインドウを閉じた後もバックグラウンドで実行";
+"Documents then open in about 0.15 seconds instead of 0.8. Nib stays out of the Dock while no window is open and uses about 100 MB of memory." = "書類を約 0.15 秒で開けます（通常は 0.8 秒）。ウインドウがない間は Dock に表示されず、約 100 MB のメモリを使用します。";

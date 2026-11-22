@@ -140,3 +140,5 @@
 "Contains changes" = "含有改动";
 "New file" = "新文件";
 "Modified" = "已修改";
+"Keep running after all windows close" = "关闭所有窗口后保留后台运行";
+"Documents then open in about 0.15 seconds instead of 0.8. Nib stays out of the Dock while no window is open and uses about 100 MB of memory." = "这样打开文稿约 0.15 秒，而不是 0.8 秒。没有窗口时 Nib 不显示在程序坞中，占用约 100 MB 内存。";

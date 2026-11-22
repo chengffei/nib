@@ -140,3 +140,5 @@
 "Contains changes" = "Contient des modifications";
 "New file" = "Nouveau fichier";
 "Modified" = "Modifié";
+"Keep running after all windows close" = "Continuer en arrière-plan après la fermeture de toutes les fenêtres";
+"Documents then open in about 0.15 seconds instead of 0.8. Nib stays out of the Dock while no window is open and uses about 100 MB of memory." = "Les documents s’ouvrent alors en 0,15 seconde environ au lieu de 0,8. Sans fenêtre ouverte, Nib n’apparaît pas dans le Dock et utilise environ 100 Mo de mémoire.";

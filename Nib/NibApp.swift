@@ -50,7 +50,9 @@ struct NibApp: App {
 /// With no windows Nib leaves the Dock and the ⌘Tab switcher (accessory policy, 11-22 Felix 定) and comes back as
 /// soon as a document opens. To quit it from there: open any document, then ⌘Q.
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        MainActor.assumeIsolated { !AppSettings.shared.keepRunning }
+    }
 
     /// Launching Nib again from Finder or Spotlight while it sits hidden: show it before SwiftUI puts up a window.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -69,7 +71,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Called after a window closes; hides from the Dock only when no titled window is left (Settings counts).
     @MainActor static func hideFromDockIfIdle() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            guard NSApp.activationPolicy() == .regular,
+            guard AppSettings.shared.keepRunning, NSApp.activationPolicy() == .regular,
                   !NSApp.windows.contains(where: { $0.isVisible && $0.styleMask.contains(.titled) }) else { return }
             NSApp.setActivationPolicy(.accessory)
             NibApp.log("dock: hidden")

@@ -44,9 +44,11 @@ struct NibApp: App {
     }
 }
 
-/// Quit when the last document window closes, rather than leaving an idle app running.
+/// Keeps running after the last window closes (11-20 Felix 定, like TextEdit and Typora): a cold start takes about
+/// 830 ms because WebKit has to start its processes, opening into a running Nib about 120 ms. Idle cost: the shell
+/// (about 45 MB) plus one spare editor engine (about 39 MB), no CPU.
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppSettings.applyHistory()

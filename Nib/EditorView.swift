@@ -26,6 +26,7 @@ final class EditorController: ObservableObject {
     weak var webView: EditorWebView?
     private var watcher: FileWatcher?
     private var watchedURL: URL?
+    deinit { NibApp.log("controller deinit") }
     var fileURL: URL? { watchedURL }
 
     func setMode(_ newMode: EditorMode) {
@@ -132,6 +133,7 @@ struct EditorView: NSViewRepresentable {
                 NibApp.log("ready")
                 host?.didBecomeReady()
                 controller.ready = true
+                GitStatus.shared.refresh()
                 if let url = controller.fileURL { Reveal.deliver(to: controller, url: url) }
                 // For debugging: the script in NIB_EVAL runs once after the first document is ready, to test a real window without stealing the keyboard.
                 // For debugging: NIB_FINDER=files|text opens the search panel (query from NIB_QUERY); NIB_REVEAL=path:line:query opens a search hit.
@@ -152,6 +154,9 @@ struct EditorView: NSViewRepresentable {
                             let parts = action.split(separator: ":", maxSplits: 1).map(String.init)
                             Exporter.run(parts[0] == "pdf" ? .pdf : .html, controller: self.controller, window: self.host?.window,
                                          target: URL(fileURLWithPath: parts[1]))
+                        }
+                        if action == "close" {
+                            (NSApp.keyWindow ?? NSApp.windows.first { $0.isVisible && NSDocumentController.shared.document(for: $0) != nil })?.performClose(nil)
                         }
                         if action == "plain" { NSApp.sendAction(#selector(NSTextView.pasteAsPlainText(_:)), to: nil, from: nil) }
                     }
@@ -260,6 +265,15 @@ final class EditorPool {
         spare = nil
         return webView
     }
+
+    /// A closed tab's engine becomes the spare (emptied first) and the old spare is dropped. A web view that has been
+    /// in a window can stay referenced by AppKit after the window closes, which kept its web process (and the
+    /// document) alive; recycling it keeps the count at one spare however many tabs are closed.
+    func recycle(_ webView: EditorWebView) {
+        webView.target = nil
+        webView.send("nib.load(text, base, top)", ["text": "", "base": NSNull(), "top": 0])
+        spare = webView
+    }
 }
 
 /// Receives messages from the web page. A separate object so that WKUserContentController does not strongly retain the web view itself.
@@ -278,6 +292,8 @@ final class EditorWebView: WKWebView {
     var target: EditorView.Coordinator?
     private var booted = false
     private var queue: [(String, [String: Any])] = []
+
+    deinit { NibApp.log("webview deinit") }
 
     static func make() -> EditorWebView {
         NibApp.log("webview create")
@@ -364,6 +380,8 @@ final class EditorHost: NSView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
 
+    deinit { NibApp.log("host deinit") }
+
     /// Whether this tab is the one currently shown in its window.
     var isSelectedTab: Bool {
         guard let window else { return false }
@@ -426,6 +444,14 @@ final class EditorHost: NSView {
                 view.image = compressed
             }
         }
+    }
+
+    /// The window is closing: hand the engine back to the pool.
+    func recycle() {
+        guard let webView else { return }
+        webView.removeFromSuperview()
+        self.webView = nil
+        EditorPool.shared.recycle(webView)
     }
 
     /// Unload the engine and leave a snapshot as a placeholder. Only done for background tabs in reading mode: unloading a tab being edited would lose its undo history.
@@ -491,6 +517,10 @@ final class EditorHibernator {
             self?.scheduled = false
             self?.evaluate()
         }
+    }
+
+    func recycle(in window: NSWindow) {
+        for host in hosts.compactMap(\.host) where host.window === window { host.recycle() }
     }
 
     func wakeSelected() {

@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import CoreServices
 import Foundation
@@ -75,6 +76,8 @@ final class GitStatus: ObservableObject {
     private func run() {
         let settings = AppSettings.shared
         guard settings.showSidebar, !settings.workspaceFolders.isEmpty else { return }
+        // Nib stays running with no windows; nobody sees the dots then. Refreshed again when a document opens.
+        guard !NSDocumentController.shared.documents.isEmpty else { return }
         generation += 1
         let current = generation
         let folders = settings.workspaceFolders

@@ -188,6 +188,14 @@ final class WindowTabs {
     }
 
     private func remove(_ window: NSWindow) {
+        // Nib keeps running with no windows: give the closed tab's engine back to the pool (see EditorPool.recycle).
+        EditorHibernator.shared.recycle(in: window)
+        if NibApp.debug {
+            weak var gone = window
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                NibApp.log("after close: window alive=\(gone != nil) engines=\(EditorWebView.all.allObjects.count)")
+            }
+        }
         guard let group = group(of: window), let index = group.windows.firstIndex(where: { $0 === window }) else { return }
         if let url = NSDocumentController.shared.document(for: window)?.fileURL {
             closedURLs.removeAll { $0 == url }
@@ -238,7 +246,10 @@ final class TabStripModel: ObservableObject {
     @Published private(set) var tabs: [Tab] = []
     @Published private(set) var windowWidth: CGFloat = 860
     private weak var window: NSWindow?
-    private var windows: [ObjectIdentifier: NSWindow] = [:]
+    /// Weak: the model lives in the window's own title bar, so strong references would keep every closed tab's window alive.
+    private struct WeakWindow { weak var window: NSWindow? }
+    private var windowRefs: [ObjectIdentifier: WeakWindow] = [:]
+    private var windows: [ObjectIdentifier: NSWindow] { windowRefs.compactMapValues(\.window) }
     private var becameKey = Date.distantPast
     private var pendingRename: DispatchWorkItem?
     nonisolated(unsafe) private var observers: [NSObjectProtocol] = []
@@ -289,7 +300,7 @@ final class TabStripModel: ObservableObject {
     func refresh() {
         guard let window else { return }
         let (list, selected) = WindowTabs.shared.tabs(for: window)
-        windows = Dictionary(uniqueKeysWithValues: list.map { (ObjectIdentifier($0), $0) })
+        windowRefs = Dictionary(uniqueKeysWithValues: list.map { (ObjectIdentifier($0), WeakWindow(window: $0)) })
         let next = list.map { Tab(id: ObjectIdentifier($0), title: $0.title, edited: $0.isDocumentEdited, selected: $0 === selected,
                                      url: NSDocumentController.shared.document(for: $0)?.fileURL) }
         if next != tabs { tabs = next }
@@ -361,6 +372,7 @@ enum TabStripInstaller {
     static let backdropID = NSUserInterfaceItemIdentifier("NibTitlebarBackdrop")
     private static var installed = Set<ObjectIdentifier>()
     private static var subscriptions: [ObjectIdentifier: AnyCancellable] = [:]
+    private static var closeObservers: [ObjectIdentifier: NSObjectProtocol] = [:]
 
     static func install(in window: NSWindow, controller: EditorController) {
         guard !installed.contains(ObjectIdentifier(window)),
@@ -407,10 +419,14 @@ enum TabStripInstaller {
             modes.trailingAnchor.constraint(equalTo: titlebar.trailingAnchor, constant: -12),
             modes.centerYAnchor.constraint(equalTo: close.centerYAnchor),
         ])
-        NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { _ in
+        // The block must not capture the window: NotificationCenter keeps it until removed, which kept every closed
+        // window (and its editor engine, 60 MB or more) alive once Nib stopped quitting after the last window.
+        let id = ObjectIdentifier(window)
+        closeObservers[id] = NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { _ in
             MainActor.assumeIsolated {
-                installed.remove(ObjectIdentifier(window))
-                subscriptions[ObjectIdentifier(window)] = nil
+                installed.remove(id)
+                subscriptions[id] = nil
+                if let token = closeObservers.removeValue(forKey: id) { NotificationCenter.default.removeObserver(token) }
             }
         }
     }

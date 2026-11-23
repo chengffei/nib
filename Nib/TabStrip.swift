@@ -521,6 +521,35 @@ struct EditToggle: View {
     }
 }
 
+/// While ⌘ is held on its own, ⌘1, ⌘2… show on the tabs; they disappear as soon as it is released or another modifier joins.
+@MainActor
+final class CommandHint: ObservableObject {
+    static let shared = CommandHint()
+    @Published private(set) var visible = false
+    nonisolated(unsafe) private var monitor: Any?
+
+    private init() {
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
+            let only = event.modifierFlags.intersection([.command, .shift, .option, .control]) == .command
+            MainActor.assumeIsolated { CommandHint.shared.set(only) }
+            return event
+        }
+        NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { CommandHint.shared.set(false) }
+        }
+    }
+
+    private func set(_ value: Bool) {
+        if visible != value { visible = value }
+    }
+
+    /// The number shown on the tab at this position: ⌘1 to ⌘8 by position, ⌘9 on the last tab when there are more than eight.
+    static func number(at index: Int, of count: Int) -> Int? {
+        if index < 8 { return index + 1 }
+        return index == count - 1 ? 9 : nil
+    }
+}
+
 /// The tab strip's shape matches the mode switch on the right: same capsule, same selected fill and height.
 enum TabMetrics {
     // Measured from the mode switch: outer frame 24 pt, selected block 20 pt.
@@ -530,6 +559,7 @@ enum TabMetrics {
 
 struct TabStrip: View {
     @ObservedObject var model: TabStripModel
+    @ObservedObject private var hint = CommandHint.shared
     @State private var hovered: ObjectIdentifier?
 
     var body: some View {
@@ -551,7 +581,8 @@ struct TabStrip: View {
                 TabButton(tab: tab, width: model.tabWidth(selected: tab.selected), single: model.tabs.count == 1, hovering: hovered == tab.id,
                           select: { model.click(tab.id) }, close: { model.close(tab.id) },
                           renaming: model.renaming == tab.id, rename: { model.beginRename(tab.id) },
-                          finish: { model.finishRename(tab.id, to: $0) })
+                          finish: { model.finishRename(tab.id, to: $0) },
+                          shortcut: hint.visible ? CommandHint.number(at: index, of: model.tabs.count) : nil)
                     .contextMenu { TabMenu(tab: tab, model: model) }
                     .onHover { inside in
                         if inside { hovered = tab.id } else if hovered == tab.id { hovered = nil }
@@ -583,9 +614,22 @@ private struct TabButton: View {
     var renaming = false
     var rename: () -> Void = {}
     var finish: (String?) -> Void = { _ in }
+    /// Shown on the right while ⌘ is held (see CommandHint).
+    var shortcut: Int? = nil
 
     var body: some View {
         ZStack {
+            if let shortcut, !renaming, width >= 40 {
+                HStack {
+                    Spacer(minLength: 0)
+                    Text(verbatim: "⌘\(shortcut)")
+                        .font(.system(size: 10, weight: .medium).monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 4)
+                        .background(Capsule(style: .continuous).fill(Color.primary.opacity(0.08)))
+                }
+                .padding(.trailing, 4)
+            }
             if renaming {
                 RenameField(initial: tab.title, finish: finish)
                     .padding(.horizontal, 22)

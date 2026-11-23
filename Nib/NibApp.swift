@@ -213,6 +213,7 @@ struct DocumentView: View {
     @ObservedObject private var settings = AppSettings.shared
 
     @StateObject private var tree = FileTree()
+    @State private var disk = DiskSnapshot()
 
     var body: some View {
         HStack(spacing: 0) {
@@ -239,6 +240,19 @@ struct DocumentView: View {
             .frame(minWidth: 480, minHeight: 320)
             .focusedSceneObject(controller)
             .task(id: fileURL) { controller.watch(fileURL) }
+            // Edits that bring the text back to what is on disk (typed and then deleted again) count as no change, so the dot goes away and closing does not ask.
+            // Checked when the document's undo manager closes an edit or undoes/redoes one: that is when NSDocument updates its change count, which may come
+            // well after the text binding changed. Checking earlier would be overwritten by that update.
+            .onReceive(NotificationCenter.default.publisher(for: .NSUndoManagerDidCloseUndoGroup).merge(with:
+                NotificationCenter.default.publisher(for: .NSUndoManagerDidUndoChange),
+                NotificationCenter.default.publisher(for: .NSUndoManagerDidRedoChange))) { note in
+                guard let window = controller.webView?.window,
+                      let document = NSDocumentController.shared.document(for: window), note.object as? UndoManager === document.undoManager else { return }
+                DispatchQueue.main.async {
+                    guard document.isDocumentEdited, disk.matches(text, url: document.fileURL) else { return }
+                    document.updateChangeCount(.changeCleared)
+                }
+            }
             .toolbar(removing: .title)
             // The toolbar draws no background of its own, letting the window background show (= body background, see AppSettings.applyChrome), so the top and the body are one colour.
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)

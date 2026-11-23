@@ -49,3 +49,28 @@ enum ExplicitSave {
         NibApp.log("autosavesInPlace off for \(NSStringFromClass(cls))")
     }
 }
+
+/// What the document's file holds on disk, to tell whether the text in the editor really differs from it.
+/// The file is read again only when its size or modification date changes (after a save, Save As or an outside edit), so most checks cost one stat.
+/// Bytes are compared rather than strings: Swift string equality treats composed and decomposed characters as equal, but the file would still change.
+@MainActor
+final class DiskSnapshot {
+    private var url: URL?
+    private var stamp: (Date, Int)?
+    private var data = Data()
+
+    /// A new document that was never saved matches when it is empty or only whitespace.
+    func matches(_ text: String, url: URL?) -> Bool {
+        guard let url else { return text.allSatisfy(\.isWhitespace) }
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+              let date = attributes[.modificationDate] as? Date, let size = attributes[.size] as? Int else { return false }
+        if url != self.url || stamp?.0 != date || stamp?.1 != size {
+            guard let fresh = try? Data(contentsOf: url) else { return false }
+            self.url = url
+            stamp = (date, size)
+            data = fresh
+        }
+        let bytes = text.utf8
+        return bytes.count == data.count && bytes.elementsEqual(data)
+    }
+}

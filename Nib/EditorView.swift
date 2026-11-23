@@ -125,7 +125,8 @@ struct EditorView: NSViewRepresentable {
             case "change":
                 guard let newText = body["text"] as? String else { return }
                 lastText = newText
-                text.wrappedValue = newText
+                // Writing back the same text would still mark the document edited.
+                if newText != text.wrappedValue { text.wrappedValue = newText }
             case "mode":
                 if let mode = (body["mode"] as? String).flatMap(EditorMode.init) { controller.mode = mode }
             case "ready":

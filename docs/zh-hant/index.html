@@ -602,6 +602,13 @@
 </footer>
 
 <script>
+  // 本地用 file:// 打开时，目录链接不会落到 index.html，补上（线上不受影响）
+  if (location.protocol === 'file:') {
+    for (const a of document.querySelectorAll('.langs-menu a')) {
+      const h = a.getAttribute('href')
+      if (h.endsWith('/')) a.setAttribute('href', h + 'index.html')
+    }
+  }
   for (const d of document.querySelectorAll('details.langs')) {
     document.addEventListener('click', e => { if (!d.contains(e.target)) d.removeAttribute('open') })
     document.addEventListener('keydown', e => { if (e.key === 'Escape') d.removeAttribute('open') })

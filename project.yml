@@ -10,11 +10,11 @@ targets:
     platform: macOS
     sources:
       - path: Nib
-        excludes: [Editor]
+        excludes: [Editor, Resources]
       - path: Nib/Editor
         type: folder
         buildPhase: resources
-      - path: docs
+      - path: Nib/Resources/docs
         type: folder
         buildPhase: resources
     entitlements:

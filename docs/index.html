@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nib — Free Markdown Reader and Editor for Mac, Typora-Style</title>
+<meta name="description" content="A free, open-source Markdown app for Mac. Files open rendered, like a page; press ⌘E to edit in place with syntax shown only on the current line. Saves back only your edits. Reloads files that agents and scripts rewrite. Native, macOS 15+.">
+<link rel="canonical" href="https://chengffei.github.io/nib/">
+<link rel="alternate" hreflang="en" href="https://chengffei.github.io/nib/">
+<link rel="alternate" hreflang="zh-Hans" href="https://chengffei.github.io/nib/zh/">
+<link rel="alternate" hreflang="zh-Hant" href="https://chengffei.github.io/nib/zh-hant/">
+<link rel="alternate" hreflang="ja" href="https://chengffei.github.io/nib/ja/">
+<link rel="alternate" hreflang="ko" href="https://chengffei.github.io/nib/ko/">
+<link rel="alternate" hreflang="fr" href="https://chengffei.github.io/nib/fr/">
+<link rel="alternate" hreflang="de" href="https://chengffei.github.io/nib/de/">
+<link rel="alternate" hreflang="es" href="https://chengffei.github.io/nib/es/">
+<link rel="alternate" hreflang="x-default" href="https://chengffei.github.io/nib/">
+<link rel="alternate" type="text/plain" title="llms.txt" href="https://chengffei.github.io/nib/llms.txt">
+<meta name="theme-color" content="#ffffff">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Nib">
+<meta property="og:url" content="https://chengffei.github.io/nib/">
+<meta property="og:title" content="Nib — Free Markdown Reader and Editor for Mac, Typora-Style">
+<meta property="og:description" content="Open a .md. Read it as a page. Edit in place, Typora-style. A native Mac app, free and open source.">
+<meta property="og:image" content="https://chengffei.github.io/nib/images/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Nib showing a rendered Markdown document">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="zh_CN">
+<meta property="og:locale:alternate" content="zh_TW">
+<meta property="og:locale:alternate" content="ja_JP">
+<meta property="og:locale:alternate" content="ko_KR">
+<meta property="og:locale:alternate" content="fr_FR">
+<meta property="og:locale:alternate" content="de_DE">
+<meta property="og:locale:alternate" content="es_ES">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Nib — Free Markdown Reader and Editor for Mac, Typora-Style">
+<meta name="twitter:description" content="Open a .md. Read it as a page. Edit in place, Typora-style. A native Mac app, free and open source.">
+<meta name="twitter:image" content="https://chengffei.github.io/nib/images/og.png">
+<link rel="icon" type="image/png" sizes="64x64" href="images/favicon.png">
+<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Nib",
+  "description": "A free, open-source Markdown reader and editor for Mac. Opens files rendered, edits in place, and saves back only what you changed.",
+  "applicationCategory": "DeveloperApplication",
+  "applicationSubCategory": "Markdown editor",
+  "operatingSystem": "macOS 15 or later",
+  "softwareVersion": "0.4.1",
+  "dateModified": "2026-11-24",
+  "inLanguage": "en",
+  "url": "https://chengffei.github.io/nib/",
+  "downloadUrl": "https://github.com/chengffei/nib/releases/latest/download/Nib.dmg",
+  "fileFormat": [
+    "text/markdown"
+  ],
+  "screenshot": "https://chengffei.github.io/nib/images/en-read.png",
+  "image": "https://chengffei.github.io/nib/images/icon.png",
+  "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+  "isAccessibleForFree": true,
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "author": {
+    "@type": "Person",
+    "name": "Felix",
+    "url": "https://github.com/chengffei"
+  },
+  "codeRepository": "https://github.com/chengffei/nib"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "inLanguage": "en",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is there a free, open-source alternative to Typora for Mac?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Nib edits Markdown in place the way Typora does: only the line you’re on shows its syntax. It’s free, open source under the GPL-3.0 and native to the Mac. Unlike Typora, it opens files in a read view first; press ⌘E to edit. It can also use Typora themes."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I read Markdown files written by coding agents like Claude Code or Codex?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Make Nib the default app for .md files, then click the file path in your terminal or open it from Finder. It opens rendered, in a tab of the window you already have, and reloads by itself when the agent rewrites the file. Add the project folder to the sidebar to see which files changed since the last commit."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Nib change my Markdown files?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Only where you edit. Saving writes back your changes and keeps everything else byte for byte, including line endings and blank lines. Nib adds no metadata and makes no hidden files."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I use Typora themes?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Put the theme’s CSS file and its folder in ~/Library/Application Support/Nib/themes and pick it in Settings. The read view uses the whole theme; the editor borrows its colors and fonts. Nib reads the format but ships no Typora themes."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is Nib free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Nib is free and open source under the GPL-3.0. There is no account and nothing to buy."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does macOS say it can’t verify the developer?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Nib isn’t notarized by Apple. Open it once and dismiss the warning, then go to System Settings › Privacy & Security and click Open Anyway. You only need to do this once."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Nib support math or Mermaid diagrams?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Not yet. Code blocks marked math or mermaid show as code."
+      }
+    }
+  ]
+}
+</script>
+<style>
+  :root {
+    --paper: #ffffff;
+    --alt: #f5f5f7;
+    --card: #ffffff;
+    --ink: #1d1d1f;
+    --sub: #424245;
+    --muted: #6e6e73;
+    --line: rgba(0, 0, 0, .08);
+    --blue: #0066cc;
+    --blue-btn: #0071e3;
+    --blue-hover: #0077ed;
+    --radius: 18px;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 17px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans", "Apple SD Gothic Neo", "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  img { max-width: 100%; height: auto; display: block; }
+  code { font: 15px "SF Mono", ui-monospace, Menlo, monospace; background: var(--alt); padding: 1px 6px; border-radius: 6px; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  .band { background: var(--alt); }
+  .band .card, .band .step, .band details, .band table { background: #fff; }
+
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(255, 255, 255, .78);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--line);
+  }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 56px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--ink); }
+  .brand:hover { text-decoration: none; }
+  .brand img { width: 28px; height: 28px; }
+  .nav-links { display: flex; align-items: center; gap: 20px; font-size: 15px; }
+  .nav-links a { color: var(--ink); }
+  .lang-toggle {
+    display: inline-block; text-decoration: none;
+    font: inherit; font-size: 13px; color: var(--muted);
+    background: none; border: 1px solid var(--line); border-radius: 999px;
+    padding: 4px 12px; cursor: pointer;
+  }
+  .lang-toggle:hover { color: var(--ink); border-color: rgba(0,0,0,.18); }
+  .langs { position: relative; }
+  .langs summary { list-style: none; }
+  .langs summary::-webkit-details-marker { display: none; }
+  .langs summary::after { content: " ▾"; font-size: 11px; }
+  .langs-menu {
+    position: absolute; right: 0; top: calc(100% + 8px); z-index: 20; min-width: 140px;
+    display: flex; flex-direction: column; padding: 6px;
+    background: #fff; border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: 0 10px 32px rgba(0,0,0,.12);
+  }
+  .langs-menu a { display: block; padding: 7px 12px; border-radius: 8px; font-size: 14px; white-space: nowrap; color: var(--ink); }
+  .langs-menu a:hover { background: var(--alt); text-decoration: none; }
+
+  .hero { text-align: center; padding: 88px 24px 56px; }
+  .hero .icon { width: 128px; height: 128px; margin: 0 auto 28px; }
+  .eyebrow { margin: 0 0 14px; font-size: 15px; font-weight: 600; letter-spacing: .02em; color: var(--blue); }
+  h1 {
+    font-size: clamp(40px, 7vw, 68px); line-height: 1.08; letter-spacing: -.02em;
+    margin: 0 0 18px; font-weight: 700;
+  }
+  .lead { font-size: clamp(18px, 2.4vw, 22px); color: var(--sub); margin: 0 auto 36px; max-width: 680px; }
+  .actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 13px 26px; border-radius: 999px; font-size: 17px; font-weight: 500;
+  }
+  .btn:hover { text-decoration: none; }
+  .btn-primary { background: var(--blue-btn); color: #fff; }
+  .btn-primary:hover { background: var(--blue-hover); }
+  .btn-secondary { color: var(--ink); border: 1px solid rgba(0,0,0,.15); }
+  .btn-secondary:hover { background: rgba(0,0,0,.03); }
+  .meta { margin-top: 16px; font-size: 14px; color: var(--muted); }
+
+  .shot { margin: 0 auto; max-width: 1000px; border-radius: 12px; overflow: hidden;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .14), 0 0 0 1px rgba(0,0,0,.06); }
+
+  section { padding: 104px 0; }
+  section.wrap { padding: 104px 24px; }
+  .band .shot { margin-top: 48px; }
+  h1, h2 { text-wrap: balance; }
+  h2 {
+    font-size: clamp(30px, 4.4vw, 44px); line-height: 1.15; letter-spacing: -.015em;
+    margin: 0 0 14px; text-align: center; font-weight: 700;
+  }
+  .section-lead { text-align: center; color: var(--sub); margin: 0 auto 48px; max-width: 640px; font-size: 19px; }
+  .narrow { max-width: 760px; }
+  .definition { font-size: 19px; line-height: 1.7; margin: 0; color: var(--sub); }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .card { background: var(--alt); border-radius: var(--radius); padding: 28px; }
+  .card .glyph { width: 32px; height: 32px; color: var(--blue); margin-bottom: 14px; }
+  .card h3 { margin: 0 0 6px; font-size: 19px; }
+  .card p { margin: 0; color: var(--sub); font-size: 15.5px; }
+
+  .split { display: grid; grid-template-columns: 1fr 1.5fr; gap: 48px; align-items: center; }
+  .split h2, .split .section-lead { text-align: left; margin-left: 0; }
+  .split .section-lead { margin-bottom: 20px; }
+  .points { margin: 0; padding: 0; list-style: none; }
+  .points li { margin: 0 0 12px; color: var(--sub); font-size: 16px; }
+  .points b { color: var(--ink); }
+
+  /* 「不动你的文件」的示意：一段 git diff */
+  .diff { background: #1d1d1f; color: #f5f5f7; border-radius: 14px; padding: 22px 0; overflow-x: auto;
+    font: 14px/1.75 "SF Mono", ui-monospace, Menlo, monospace; }
+  .diff div { padding: 0 24px; white-space: pre; }
+  .diff .h { color: #a1a1a6; }
+  .diff .del { background: rgba(255, 69, 58, .16); color: #ff9f97; }
+  .diff .add { background: rgba(48, 209, 88, .16); color: #8fe6a6; }
+
+  .steps { counter-reset: step; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .step { background: var(--alt); border-radius: var(--radius); padding: 28px; }
+  .step::before {
+    counter-increment: step; content: counter(step);
+    display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--blue-btn); color: #fff; font-weight: 600; font-size: 15px; margin-bottom: 14px;
+  }
+  .step h3 { margin: 0 0 6px; font-size: 18px; }
+  .step p { margin: 0; color: var(--sub); font-size: 15.5px; }
+  .install-download { margin: -16px 0 40px; }
+  .note { text-align: center; color: var(--muted); font-size: 14px; margin-top: 22px; }
+
+  table { width: 100%; max-width: 640px; margin: 0 auto; border-collapse: collapse; background: var(--alt); border-radius: var(--radius); overflow: hidden; }
+  td, th { padding: 15px 22px; border-bottom: 1px solid var(--line); font-size: 16px; text-align: left; }
+  tr:last-child td { border-bottom: none; }
+  .keys td:last-child { text-align: right; color: var(--sub); white-space: nowrap; }
+  kbd {
+    font: 500 14px -apple-system, BlinkMacSystemFont, sans-serif; color: var(--ink);
+    background: #fff; border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 6px; padding: 2px 8px; margin-left: 4px;
+  }
+  .card kbd, .points kbd, .section-lead kbd, .step kbd { margin-left: 0; }
+  .table-scroll { overflow-x: auto; }
+  table.compare { max-width: 1000px; }
+  table.compare th { font-size: 15px; }
+  table.compare td { font-size: 15px; color: var(--sub); }
+  table.compare td:first-child { color: var(--muted); }
+  table.compare th:nth-child(2), table.compare td:nth-child(2) { background: rgba(0, 113, 227, .06); font-weight: 600; color: var(--ink); }
+
+  .faq { max-width: 760px; margin: 0 auto; }
+  .faq details { background: var(--alt); border-radius: 14px; padding: 18px 24px; margin-bottom: 12px; }
+  .faq summary { cursor: pointer; font-weight: 600; font-size: 17px; list-style: none; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; float: right; color: var(--muted); font-weight: 400; }
+  .faq details[open] summary::after { content: "–"; }
+  .faq p { margin: 10px 0 0; color: var(--sub); font-size: 16px; }
+
+  footer { padding: 64px 0 56px; text-align: center; color: var(--muted); font-size: 14px; background: var(--alt); }
+  footer p { margin: 6px 0; }
+
+  @media (max-width: 820px) {
+    .grid, .steps { grid-template-columns: 1fr; }
+    .split { grid-template-columns: 1fr; gap: 28px; }
+    .split h2, .split .section-lead { text-align: center; margin-left: auto; }
+    .hero { padding: 56px 24px 40px; }
+    section { padding: 72px 0; }
+    section.wrap { padding: 72px 24px; }
+    .nav-links .hide-sm { display: none; }
+    td, th { padding: 12px 14px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#"><img src="images/favicon.png" width="28" height="28" alt="">Nib</a>
+    <div class="nav-links">
+      <a class="hide-sm" href="#features">Features</a>
+      <a class="hide-sm" href="#install">Install</a>
+      <a href="https://github.com/chengffei/nib">GitHub</a>
+      <details class="langs"><summary class="lang-toggle" aria-label="Language">English</summary><div class="langs-menu"><a href="zh/" hreflang="zh-Hans" lang="zh-Hans">简体中文</a><a href="zh-hant/" hreflang="zh-Hant" lang="zh-Hant">繁體中文</a><a href="ja/" hreflang="ja" lang="ja">日本語</a><a href="ko/" hreflang="ko" lang="ko">한국어</a><a href="fr/" hreflang="fr" lang="fr">Français</a><a href="de/" hreflang="de" lang="de">Deutsch</a><a href="es/" hreflang="es" lang="es">Español</a></div></details>
+    </div>
+  </div>
+</nav>
+
+<header class="hero wrap">
+  <img class="icon" src="images/icon-256.png" width="128" height="128" alt="Nib app icon">
+  <p class="eyebrow">Open-source Markdown reader and editor for Mac</p>
+  <h1>Open a .md. Read it as a page.</h1>
+  <p class="lead">
+    
+    Rendered the moment it opens. Press <kbd>⌘E</kbd> to edit in place. Saved back exactly as you left it.
+  </p>
+  <div class="actions">
+    <a class="btn btn-primary" href="https://github.com/chengffei/nib/releases/latest/download/Nib.dmg">
+      Download Nib
+    </a>
+    <a class="btn btn-secondary" href="https://github.com/chengffei/nib">
+      View on GitHub
+    </a>
+  </div>
+  <p class="meta">
+    
+    Free &amp; open source · Native Mac app · about 6 MB · macOS 15 or later
+  </p>
+</header>
+
+<div class="wrap">
+  <div class="shot">
+    <img src="images/en-read.png" width="1600" height="1000" alt="Nib showing a rendered Markdown cheat sheet, with the workspace sidebar, tabs and git change dots" loading="eager">
+  </div>
+</div>
+
+<section id="about" class="wrap narrow">
+  <h2>What is Nib?</h2>
+  <p class="definition">
+    Nib is a free, open-source Markdown app for Mac that opens files rendered, like a document, instead of as code. Press ⌘E to edit in place: only the line you’re on shows its Markdown, the way Typora works. Saving writes back only your edits, so the file stays clean for git. It reloads files that other programs change, keeps every document as a tab in one window, and searches whole folders. Native app, about 6 MB, macOS 15 or later.
+    
+  </p>
+</section>
+
+<section id="features" class="band">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <h2>Read first. Edit in place.</h2>
+        <p class="section-lead">
+          
+          While you read, it’s just a page.
+        </p>
+        <ul class="points">
+          <li><b>Opens rendered.</b> Headings, tables, checklists and code, laid out. Links work. Nothing to type into by accident.</li>
+          <li><b><kbd>⌘E</kbd> to edit.</b> Only the line you’re on shows its Markdown. The rest stays rendered.</li>
+          <li><b>Levels at a glance.</b> Small H1–H6 marks in the margin while you edit.</li>
+          <li><b><kbd>⌘/</kbd> for source.</b> The whole file in monospace, one key away.</li>
+        </ul>
+      </div>
+      <div class="shot">
+        <img src="images/en-edit.png" width="1600" height="1105" alt="Nib in edit mode, dark theme: the current line shows its # and the margin marks heading levels" loading="lazy">
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="split">
+    <div>
+      <h2>Your file, untouched.</h2>
+      <p class="section-lead">
+        
+        Change one word, and <code>git diff</code> shows one word.
+      </p>
+      <ul class="points">
+        <li><b>Written back as is.</b> Line endings, blank lines, indentation and untouched lines stay byte for byte.</li>
+        <li><b>Nothing added.</b> No metadata, no reformatting, no hidden files.</li>
+        <li><b>No scripts.</b> Raw HTML isn’t rendered, so a downloaded file is safe to open.</li>
+      </ul>
+    </div>
+    <div class="diff" aria-label="git diff">
+      <div class="h">$ git diff cheat-sheet.md</div>
+      <div class="h">@@ -19,3 +19,3 @@</div>
+      <div> - [x] Task lists start with `- [ ]`</div>
+      <div> - [x] Press Tab to nest a list item</div>
+      <div class="del">-- [ ] Wrap text in two asterisks for **bold**</div>
+      <div class="add">+- [x] Wrap text in two asterisks for **bold**</div>
+    </div>
+  </div>
+</section>
+
+<section id="tools" class="band">
+  <div class="wrap">
+    <h2>For the Markdown your tools write.</h2>
+    <p class="section-lead">
+      
+      Plans from coding agents. Reports from scripts. Docs from build tools. You mostly read them, and now and then fix a line.
+    </p>
+    <div class="grid">
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg>
+        <h3>Reloads in 0.1 s</h3>
+        <p>When a terminal, script or agent rewrites a file, the open page updates on its own.</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M8 6V4h8v2"/></svg>
+        <h3>One window, many tabs</h3>
+        <p>Files from Finder, the terminal or a link all join one window. <kbd>⌘1</kbd>–<kbd>⌘9</kbd> to switch.</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="9" r="2.2"/><path d="M6 8.2v7.6"/><path d="M18 11.2c0 3-4 3.3-10.2 5.6"/></svg>
+        <h3>A workspace with git dots</h3>
+        <p>Changed files get an orange dot, new ones green. They clear as soon as you commit.</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+        <h3>Find anything</h3>
+        <p><kbd>⇧⌘O</kbd> opens by name. <kbd>⇧⌘F</kbd> searches every file and jumps to the line. 2,500 files in under 0.25 s.</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 5 14h6l-1 7 8-11h-6z"/></svg>
+        <h3>Always ready</h3>
+        <p>Close the last window and it leaves the Dock but stays ready. The next file opens in about 0.15 s.</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+        <h3>Sleeping tabs</h3>
+        <p>Tabs you haven’t looked at in a while give back their memory and wake up where you left them.</p>
+      </div>
+    </div>
+    <div class="shot">
+      <img src="images/en-search.png" width="1600" height="1000" alt="Nib searching every Markdown file in the workspace" loading="lazy">
+    </div>
+  </div>
+</section>
+
+<section id="writing" class="band">
+  <div class="wrap">
+    <h2>Good for writing, too.</h2>
+    <p class="section-lead">
+      
+      What Typora users reach for is here.
+    </p>
+    <div class="grid">
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 8"/></svg>
+        <h3>Paste a screenshot</h3>
+        <p>Saved in <code>name.assets/</code> next to the file, linked with a relative path. Honors <code>typora-copy-images-to</code>.</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 13.5h6M9 17h3"/></svg>
+        <h3>Web paste becomes Markdown</h3>
+        <p>Rich text from browsers, Google Docs and Feishu turns into clean Markdown.</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14.5h18M10 4v16"/></svg>
+        <h3>Tables and task lists</h3>
+        <p>CommonMark and GitHub Flavored Markdown. <kbd>Tab</kbd> indents lists.</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M8 12h12M8 18h12"/><circle cx="4.5" cy="12" r=".6"/><circle cx="4.5" cy="18" r=".6"/></svg>
+        <h3>Outline, focus, typewriter</h3>
+        <p><kbd>⇧⌘L</kbd> for the outline. <kbd>F8</kbd> dims all but this paragraph. <kbd>F9</kbd> keeps your line centered.</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 19h14"/></svg>
+        <h3>Export and print</h3>
+        <p>PDF, or a single HTML file with images embedded, ready to send.</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17" fill="currentColor" stroke="none" opacity=".25"/></svg>
+        <h3>Your look</h3>
+        <p>Light, dark or warm paper, or any Typora theme. Fonts, spacing and shortcuts are yours to change.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="compare" class="wrap">
+  <h2>Nib vs Typora, MarkEdit and Obsidian</h2>
+  <p class="section-lead">
+    Typora set the standard for editing in place. MarkEdit is a fast native source editor. Obsidian is a whole notes system. Nib is for reading Markdown, and fixing it when needed.
+    
+  </p>
+  <div class="table-scroll">
+  <table class="compare">
+    <thead><tr><th></th><th>Nib</th><th>Typora</th><th>MarkEdit</th><th>Obsidian</th></tr></thead>
+    <tbody>
+      <tr><td>Opens a file as</td><td>Rendered page</td><td>Live-preview editor</td><td>Highlighted source</td><td>Live-preview editor</td></tr>
+      <tr><td>Where files live</td><td>Anywhere</td><td>Anywhere</td><td>Anywhere</td><td>Inside a vault</td></tr>
+      <tr><td>Git status in the sidebar</td><td>✓</td><td>—</td><td>—</td><td>With a plugin</td></tr>
+      <tr><td>Interface</td><td>Native shell, CodeMirror core</td><td>Electron</td><td>Native shell, CodeMirror core</td><td>Electron</td></tr>
+      <tr><td>Platforms</td><td>Mac</td><td>Mac · Windows · Linux</td><td>Mac</td><td>Mac · Windows · Linux · iOS · Android</td></tr>
+      <tr><td>Price · License</td><td>Free · GPL-3.0</td><td>Paid · proprietary</td><td>Free · MIT</td><td>Free · proprietary</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="install" class="band">
+  <div class="wrap">
+    <h2>Install</h2>
+    <p class="section-lead">
+      
+      Nib isn’t notarized by Apple. Allow it once on first launch.
+    </p>
+    <div class="actions install-download">
+      <a class="btn btn-primary" href="https://github.com/chengffei/nib/releases/latest/download/Nib.dmg">
+        Download Nib.dmg
+      </a>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <h3>Drag to Applications</h3>
+        <p>Open Nib.dmg and drag Nib into the Applications folder.</p>
+      </div>
+      <div class="step">
+        <h3>Allow it once</h3>
+        <p>Open it and click Done. Then in System Settings › Privacy &amp; Security, click Open Anyway.</p>
+      </div>
+      <div class="step">
+        <h3>Make it the default</h3>
+        <p>Select a .md in Finder, press <kbd>⌘I</kbd>, choose Nib under Open with, and click Change All.</p>
+      </div>
+    </div>
+    <p class="note">
+      
+      Requires macOS 15 or later. Universal app for Apple silicon and Intel.
+    </p>
+  </div>
+</section>
+
+<section class="wrap">
+  <h2>Shortcuts</h2>
+  <p class="section-lead">
+    
+    Change any of them in Settings.
+  </p>
+  <table class="keys">
+    <tr><td>Edit / read</td><td><kbd>⌘E</kbd></td></tr>
+    <tr><td>Source</td><td><kbd>⌘/</kbd></td></tr>
+    <tr><td>Quick open</td><td><kbd>⇧⌘O</kbd></td></tr>
+    <tr><td>Search the workspace</td><td><kbd>⇧⌘F</kbd></td></tr>
+    <tr><td>Sidebar</td><td><kbd>⌃⌘S</kbd></td></tr>
+    <tr><td>Outline</td><td><kbd>⇧⌘L</kbd></td></tr>
+    <tr><td>Focus / typewriter</td><td><kbd>F8</kbd><kbd>F9</kbd></td></tr>
+    <tr><td>Switch tabs</td><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td></tr>
+    <tr><td>Reopen closed tab</td><td><kbd>⇧⌘T</kbd></td></tr>
+  </table>
+</section>
+
+<section id="faq" class="band">
+  <div class="wrap">
+    <h2>FAQ</h2>
+    <p class="section-lead">The questions people ask most.</p>
+    <div class="faq">
+      <details><summary>Is there a free, open-source alternative to Typora for Mac?</summary><p>Nib edits Markdown in place the way Typora does: only the line you’re on shows its syntax. It’s free, open source under the GPL-3.0 and native to the Mac. Unlike Typora, it opens files in a read view first; press ⌘E to edit. It can also use Typora themes.</p></details>
+      <details><summary>How do I read Markdown files written by coding agents like Claude Code or Codex?</summary><p>Make Nib the default app for .md files, then click the file path in your terminal or open it from Finder. It opens rendered, in a tab of the window you already have, and reloads by itself when the agent rewrites the file. Add the project folder to the sidebar to see which files changed since the last commit.</p></details>
+      <details><summary>Does Nib change my Markdown files?</summary><p>Only where you edit. Saving writes back your changes and keeps everything else byte for byte, including line endings and blank lines. Nib adds no metadata and makes no hidden files.</p></details>
+      <details><summary>Can I use Typora themes?</summary><p>Yes. Put the theme’s CSS file and its folder in ~/Library/Application Support/Nib/themes and pick it in Settings. The read view uses the whole theme; the editor borrows its colors and fonts. Nib reads the format but ships no Typora themes.</p></details>
+      <details><summary>Is Nib free?</summary><p>Yes. Nib is free and open source under the GPL-3.0. There is no account and nothing to buy.</p></details>
+      <details><summary>Why does macOS say it can’t verify the developer?</summary><p>Nib isn’t notarized by Apple. Open it once and dismiss the warning, then go to System Settings › Privacy & Security and click Open Anyway. You only need to do this once.</p></details>
+      <details><summary>Does Nib support math or Mermaid diagrams?</summary><p>Not yet. Code blocks marked math or mermaid show as code.</p></details>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>
+      
+      Nib is open source under the GPL-3.0 · Editing by <a href="https://codemirror.net/">CodeMirror</a>, reading view by <a href="https://github.com/markdown-it/markdown-it">markdown-it</a> · Not affiliated with Typora
+    </p>
+    <p><a href="https://github.com/chengffei/nib">github.com/chengffei/nib</a></p>
+    <p>
+      Made by <a href="https://github.com/chengffei">Felix</a> · Version 0.4.1 · Last updated <time datetime="2026-11-24">24 November 2026</time>
+      
+    </p>
+  </div>
+</footer>
+
+<script>
+  for (const d of document.querySelectorAll('details.langs')) {
+    document.addEventListener('click', e => { if (!d.contains(e.target)) d.removeAttribute('open') })
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') d.removeAttribute('open') })
+  }
+</script>
+</body>
+</html>

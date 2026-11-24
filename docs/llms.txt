@@ -1,0 +1,37 @@
+# Nib
+
+> Nib is a free, open-source Markdown reader and editor for macOS. It opens .md files rendered, like a document, rather than as source. Press ⌘E to edit in place: only the line under the cursor shows its Markdown syntax and everything else stays rendered, the way Typora works; ⌘/ shows the whole source. Saving writes back only the user's edits, keeping line endings, blank lines and untouched lines byte for byte, so git diffs stay clean. It is built for Markdown written by coding agents, scripts and build tools: files changed on disk reload in about 0.1 s, every opened file becomes a tab in one window, and a workspace sidebar shows git change status. Native SwiftUI and AppKit shell with a CodeMirror 6 editing core, about 6 MB, macOS 15 or later. GPL-3.0 License. Not affiliated with Typora.
+
+## Key facts
+
+- Default view: rendered read mode; links are clickable; ⌘E toggles editing in the same view; ⌘/ toggles monospace source
+- Editing: live preview where only the current line reveals syntax; H1–H6 level marks in the margin; CommonMark and GitHub Flavored Markdown (tables, task lists, strikethrough, autolinks); Tab / Shift-Tab indents lists
+- Files: saves are byte-identical outside the edited lines; LF and CRLF preserved; no metadata or sidecar files; raw HTML in Markdown is not rendered (no scripts run)
+- Live reload: when another program rewrites an open file and there are no unsaved edits, it reloads in about 0.1 s
+- Tabs: every opened document joins one window as a tab; ⌘1–⌘9 switch; ⇧⌘T reopens a closed tab; background tabs sleep to save memory
+- Workspace: add folders to the sidebar (⌃⌘S); git status dots (orange changed, green new) update via FSEvents within about 1.5 s of a commit
+- Search: ⇧⌘O quick open by file name; ⇧⌘F full-text search across the workspace with jump to line (about 0.1–0.25 s for 2,500 files)
+- Background: after the last window closes, Nib leaves the Dock but stays running; the next file opens in about 0.15 s (can be turned off in Settings)
+- Writing: paste screenshots into name.assets/ with relative links (honors typora-copy-images-to); rich-text paste from web pages, Google Docs and Feishu converts to Markdown; ⌥⇧⌘V pastes plain text
+- Views: outline (⇧⌘L), focus mode (F8), typewriter mode (F9), word count in the title bar
+- Export: print, PDF, single-file HTML with images embedded
+- Appearance: light, dark, warm paper or follow system; reads Typora themes from ~/Library/Application Support/Nib/themes; body and code fonts, size, line height and paragraph spacing; 13 customizable shortcuts
+- Interface languages: English, Simplified Chinese, Traditional Chinese, Japanese, Korean, French, German, Spanish
+- Not included: plugins, sync, account; no math or Mermaid rendering yet
+- Platform: macOS 15 or later; universal app (Apple silicon and Intel)
+- First launch: Nib is not notarized by Apple; allow it once in System Settings › Privacy & Security › Open Anyway
+
+## How it compares
+
+- Typora: the model for live-preview editing; paid, proprietary, Electron, cross-platform; opens files in edit mode.
+- MarkEdit: free, open-source (MIT) native Mac app with a CodeMirror core; a source editor that shows highlighted Markdown rather than a rendered page.
+- Obsidian: free, proprietary, Electron, cross-platform; organized around a vault folder, plugins and linked notes.
+- Nib: opens any .md where it is as a rendered page, edits in place, keeps files byte-clean, and keeps up with files that tools rewrite.
+
+## Links
+
+- [Website](https://chengffei.github.io/nib/): overview, screenshots, comparison and FAQ
+- [中文介绍页](https://chengffei.github.io/nib/zh/): Simplified Chinese version of the website
+- Other languages: [繁體中文](https://chengffei.github.io/nib/zh-hant/), [日本語](https://chengffei.github.io/nib/ja/), [한국어](https://chengffei.github.io/nib/ko/), [Français](https://chengffei.github.io/nib/fr/), [Deutsch](https://chengffei.github.io/nib/de/), [Español](https://chengffei.github.io/nib/es/)
+- [Source code](https://github.com/chengffei/nib)
+- [Typora theme guide](https://github.com/chengffei/nib/blob/main/Nib/Resources/docs/themes.md)

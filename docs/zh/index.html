@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nib — 免费开源的 Mac Markdown 阅读编辑器，Typora 式就地编辑</title>
+<meta name="description" content="免费开源的 Mac Markdown 应用。打开即渲染成排好版的文档，⌘E 就地编辑，只有光标所在行露出语法。存盘只写回你的改动。Agent 和脚本改写文件后自动刷新。原生应用，macOS 15+。">
+<link rel="canonical" href="https://chengffei.github.io/nib/zh/">
+<link rel="alternate" hreflang="en" href="https://chengffei.github.io/nib/">
+<link rel="alternate" hreflang="zh-Hans" href="https://chengffei.github.io/nib/zh/">
+<link rel="alternate" hreflang="zh-Hant" href="https://chengffei.github.io/nib/zh-hant/">
+<link rel="alternate" hreflang="ja" href="https://chengffei.github.io/nib/ja/">
+<link rel="alternate" hreflang="ko" href="https://chengffei.github.io/nib/ko/">
+<link rel="alternate" hreflang="fr" href="https://chengffei.github.io/nib/fr/">
+<link rel="alternate" hreflang="de" href="https://chengffei.github.io/nib/de/">
+<link rel="alternate" hreflang="es" href="https://chengffei.github.io/nib/es/">
+<link rel="alternate" hreflang="x-default" href="https://chengffei.github.io/nib/">
+<link rel="alternate" type="text/plain" title="llms.txt" href="https://chengffei.github.io/nib/llms.txt">
+<meta name="theme-color" content="#ffffff">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Nib">
+<meta property="og:url" content="https://chengffei.github.io/nib/zh/">
+<meta property="og:title" content="Nib — 免费开源的 Mac Markdown 阅读编辑器，Typora 式就地编辑">
+<meta property="og:description" content="打开 .md，看到的就是成品。Typora 式就地编辑，原生 Mac 应用，免费开源。">
+<meta property="og:image" content="https://chengffei.github.io/nib/images/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Nib showing a rendered Markdown document">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="zh_TW">
+<meta property="og:locale:alternate" content="ja_JP">
+<meta property="og:locale:alternate" content="ko_KR">
+<meta property="og:locale:alternate" content="fr_FR">
+<meta property="og:locale:alternate" content="de_DE">
+<meta property="og:locale:alternate" content="es_ES">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Nib — 免费开源的 Mac Markdown 阅读编辑器，Typora 式就地编辑">
+<meta name="twitter:description" content="打开 .md，看到的就是成品。Typora 式就地编辑，原生 Mac 应用，免费开源。">
+<meta name="twitter:image" content="https://chengffei.github.io/nib/images/og.png">
+<link rel="icon" type="image/png" sizes="64x64" href="../images/favicon.png">
+<link rel="apple-touch-icon" href="../images/apple-touch-icon.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Nib",
+  "description": "免费开源的 Mac Markdown 阅读编辑器。打开即渲染，就地编辑，存盘只写回你改过的地方。",
+  "applicationCategory": "DeveloperApplication",
+  "applicationSubCategory": "Markdown editor",
+  "operatingSystem": "macOS 15 or later",
+  "softwareVersion": "0.4.1",
+  "dateModified": "2026-11-24",
+  "inLanguage": "zh-Hans",
+  "url": "https://chengffei.github.io/nib/zh/",
+  "downloadUrl": "https://github.com/chengffei/nib/releases/latest/download/Nib.dmg",
+  "fileFormat": [
+    "text/markdown"
+  ],
+  "screenshot": "https://chengffei.github.io/nib/images/zh-read.png",
+  "image": "https://chengffei.github.io/nib/images/icon.png",
+  "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+  "isAccessibleForFree": true,
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "author": {
+    "@type": "Person",
+    "name": "Felix",
+    "url": "https://github.com/chengffei"
+  },
+  "codeRepository": "https://github.com/chengffei/nib"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "inLanguage": "zh-Hans",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Mac 上有免费开源的 Typora 替代品吗？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Nib 的就地编辑和 Typora 一样，只有光标所在行露出语法。它免费、以 GPL-3.0 开源、是原生 Mac 应用。和 Typora 不同，它打开文件先进阅读视图，按 ⌘E 编辑。它也能用 Typora 主题。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "怎么读 Claude Code、Codex 这类编程 Agent 写的 Markdown？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "把 Nib 设为 .md 的默认应用，然后在终端里点文件路径，或从访达打开。文件以排好的版面打开，并进已有窗口的标签里；Agent 改写文件时自动刷新。把项目文件夹加进侧栏，还能看到上次提交后改了哪些文件。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Nib 会改动我的 Markdown 文件吗？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "只改你编辑的地方。存盘时写回你的改动，其余逐字节保持原样，包括换行符和空行。Nib 不写元数据，不留隐藏文件。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "能用 Typora 主题吗？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "能。把主题的 CSS 和同名文件夹放进 ~/Library/Application Support/Nib/themes，在设置里选。阅读视图完整套用主题，编辑时借用主题的颜色和字体。Nib 兼容格式，但不附带 Typora 的主题。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Nib 免费吗？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "免费，以 GPL-3.0 协议开源。没有账号，没有付费项。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "为什么 macOS 提示无法验证开发者？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Nib 没有经过 Apple 公证。先打开一次并关掉提示，再到「系统设置 › 隐私与安全性」点「仍要打开」。只需一次。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "支持数学公式或 Mermaid 图吗？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "暂不支持，这类代码块按代码显示。"
+      }
+    }
+  ]
+}
+</script>
+<style>
+  :root {
+    --paper: #ffffff;
+    --alt: #f5f5f7;
+    --card: #ffffff;
+    --ink: #1d1d1f;
+    --sub: #424245;
+    --muted: #6e6e73;
+    --line: rgba(0, 0, 0, .08);
+    --blue: #0066cc;
+    --blue-btn: #0071e3;
+    --blue-hover: #0077ed;
+    --radius: 18px;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 17px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans", "Apple SD Gothic Neo", "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  img { max-width: 100%; height: auto; display: block; }
+  code { font: 15px "SF Mono", ui-monospace, Menlo, monospace; background: var(--alt); padding: 1px 6px; border-radius: 6px; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  .band { background: var(--alt); }
+  .band .card, .band .step, .band details, .band table { background: #fff; }
+
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(255, 255, 255, .78);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--line);
+  }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 56px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--ink); }
+  .brand:hover { text-decoration: none; }
+  .brand img { width: 28px; height: 28px; }
+  .nav-links { display: flex; align-items: center; gap: 20px; font-size: 15px; }
+  .nav-links a { color: var(--ink); }
+  .lang-toggle {
+    display: inline-block; text-decoration: none;
+    font: inherit; font-size: 13px; color: var(--muted);
+    background: none; border: 1px solid var(--line); border-radius: 999px;
+    padding: 4px 12px; cursor: pointer;
+  }
+  .lang-toggle:hover { color: var(--ink); border-color: rgba(0,0,0,.18); }
+  .langs { position: relative; }
+  .langs summary { list-style: none; }
+  .langs summary::-webkit-details-marker { display: none; }
+  .langs summary::after { content: " ▾"; font-size: 11px; }
+  .langs-menu {
+    position: absolute; right: 0; top: calc(100% + 8px); z-index: 20; min-width: 140px;
+    display: flex; flex-direction: column; padding: 6px;
+    background: #fff; border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: 0 10px 32px rgba(0,0,0,.12);
+  }
+  .langs-menu a { display: block; padding: 7px 12px; border-radius: 8px; font-size: 14px; white-space: nowrap; color: var(--ink); }
+  .langs-menu a:hover { background: var(--alt); text-decoration: none; }
+
+  .hero { text-align: center; padding: 88px 24px 56px; }
+  .hero .icon { width: 128px; height: 128px; margin: 0 auto 28px; }
+  .eyebrow { margin: 0 0 14px; font-size: 15px; font-weight: 600; letter-spacing: .02em; color: var(--blue); }
+  h1 {
+    font-size: clamp(40px, 7vw, 68px); line-height: 1.08; letter-spacing: -.02em;
+    margin: 0 0 18px; font-weight: 700;
+  }
+  .lead { font-size: clamp(18px, 2.4vw, 22px); color: var(--sub); margin: 0 auto 36px; max-width: 680px; }
+  .actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 13px 26px; border-radius: 999px; font-size: 17px; font-weight: 500;
+  }
+  .btn:hover { text-decoration: none; }
+  .btn-primary { background: var(--blue-btn); color: #fff; }
+  .btn-primary:hover { background: var(--blue-hover); }
+  .btn-secondary { color: var(--ink); border: 1px solid rgba(0,0,0,.15); }
+  .btn-secondary:hover { background: rgba(0,0,0,.03); }
+  .meta { margin-top: 16px; font-size: 14px; color: var(--muted); }
+
+  .shot { margin: 0 auto; max-width: 1000px; border-radius: 12px; overflow: hidden;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .14), 0 0 0 1px rgba(0,0,0,.06); }
+
+  section { padding: 104px 0; }
+  section.wrap { padding: 104px 24px; }
+  .band .shot { margin-top: 48px; }
+  h1, h2 { text-wrap: balance; }
+  h2 {
+    font-size: clamp(30px, 4.4vw, 44px); line-height: 1.15; letter-spacing: -.015em;
+    margin: 0 0 14px; text-align: center; font-weight: 700;
+  }
+  .section-lead { text-align: center; color: var(--sub); margin: 0 auto 48px; max-width: 640px; font-size: 19px; }
+  .narrow { max-width: 760px; }
+  .definition { font-size: 19px; line-height: 1.7; margin: 0; color: var(--sub); }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .card { background: var(--alt); border-radius: var(--radius); padding: 28px; }
+  .card .glyph { width: 32px; height: 32px; color: var(--blue); margin-bottom: 14px; }
+  .card h3 { margin: 0 0 6px; font-size: 19px; }
+  .card p { margin: 0; color: var(--sub); font-size: 15.5px; }
+
+  .split { display: grid; grid-template-columns: 1fr 1.5fr; gap: 48px; align-items: center; }
+  .split h2, .split .section-lead { text-align: left; margin-left: 0; }
+  .split .section-lead { margin-bottom: 20px; }
+  .points { margin: 0; padding: 0; list-style: none; }
+  .points li { margin: 0 0 12px; color: var(--sub); font-size: 16px; }
+  .points b { color: var(--ink); }
+
+  /* 「不动你的文件」的示意：一段 git diff */
+  .diff { background: #1d1d1f; color: #f5f5f7; border-radius: 14px; padding: 22px 0; overflow-x: auto;
+    font: 14px/1.75 "SF Mono", ui-monospace, Menlo, monospace; }
+  .diff div { padding: 0 24px; white-space: pre; }
+  .diff .h { color: #a1a1a6; }
+  .diff .del { background: rgba(255, 69, 58, .16); color: #ff9f97; }
+  .diff .add { background: rgba(48, 209, 88, .16); color: #8fe6a6; }
+
+  .steps { counter-reset: step; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .step { background: var(--alt); border-radius: var(--radius); padding: 28px; }
+  .step::before {
+    counter-increment: step; content: counter(step);
+    display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--blue-btn); color: #fff; font-weight: 600; font-size: 15px; margin-bottom: 14px;
+  }
+  .step h3 { margin: 0 0 6px; font-size: 18px; }
+  .step p { margin: 0; color: var(--sub); font-size: 15.5px; }
+  .install-download { margin: -16px 0 40px; }
+  .note { text-align: center; color: var(--muted); font-size: 14px; margin-top: 22px; }
+
+  table { width: 100%; max-width: 640px; margin: 0 auto; border-collapse: collapse; background: var(--alt); border-radius: var(--radius); overflow: hidden; }
+  td, th { padding: 15px 22px; border-bottom: 1px solid var(--line); font-size: 16px; text-align: left; }
+  tr:last-child td { border-bottom: none; }
+  .keys td:last-child { text-align: right; color: var(--sub); white-space: nowrap; }
+  kbd {
+    font: 500 14px -apple-system, BlinkMacSystemFont, sans-serif; color: var(--ink);
+    background: #fff; border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 6px; padding: 2px 8px; margin-left: 4px;
+  }
+  .card kbd, .points kbd, .section-lead kbd, .step kbd { margin-left: 0; }
+  .table-scroll { overflow-x: auto; }
+  table.compare { max-width: 1000px; }
+  table.compare th { font-size: 15px; }
+  table.compare td { font-size: 15px; color: var(--sub); }
+  table.compare td:first-child { color: var(--muted); }
+  table.compare th:nth-child(2), table.compare td:nth-child(2) { background: rgba(0, 113, 227, .06); font-weight: 600; color: var(--ink); }
+
+  .faq { max-width: 760px; margin: 0 auto; }
+  .faq details { background: var(--alt); border-radius: 14px; padding: 18px 24px; margin-bottom: 12px; }
+  .faq summary { cursor: pointer; font-weight: 600; font-size: 17px; list-style: none; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; float: right; color: var(--muted); font-weight: 400; }
+  .faq details[open] summary::after { content: "–"; }
+  .faq p { margin: 10px 0 0; color: var(--sub); font-size: 16px; }
+
+  footer { padding: 64px 0 56px; text-align: center; color: var(--muted); font-size: 14px; background: var(--alt); }
+  footer p { margin: 6px 0; }
+
+  @media (max-width: 820px) {
+    .grid, .steps { grid-template-columns: 1fr; }
+    .split { grid-template-columns: 1fr; gap: 28px; }
+    .split h2, .split .section-lead { text-align: center; margin-left: auto; }
+    .hero { padding: 56px 24px 40px; }
+    section { padding: 72px 0; }
+    section.wrap { padding: 72px 24px; }
+    .nav-links .hide-sm { display: none; }
+    td, th { padding: 12px 14px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#"><img src="../images/favicon.png" width="28" height="28" alt="">Nib</a>
+    <div class="nav-links">
+      <a class="hide-sm" href="#features">功能</a>
+      <a class="hide-sm" href="#install">安装</a>
+      <a href="https://github.com/chengffei/nib">GitHub</a>
+      <details class="langs"><summary class="lang-toggle" aria-label="Language">简体中文</summary><div class="langs-menu"><a href="../" hreflang="en" lang="en">English</a><a href="../zh-hant/" hreflang="zh-Hant" lang="zh-Hant">繁體中文</a><a href="../ja/" hreflang="ja" lang="ja">日本語</a><a href="../ko/" hreflang="ko" lang="ko">한국어</a><a href="../fr/" hreflang="fr" lang="fr">Français</a><a href="../de/" hreflang="de" lang="de">Deutsch</a><a href="../es/" hreflang="es" lang="es">Español</a></div></details>
+    </div>
+  </div>
+</nav>
+
+<header class="hero wrap">
+  <img class="icon" src="../images/icon-256.png" width="128" height="128" alt="Nib app icon">
+  <p class="eyebrow">开源的 Mac Markdown 阅读编辑器</p>
+  <h1>打开 .md，看到的就是成品。</h1>
+  <p class="lead">
+    打开即渲染，<kbd>⌘E</kbd> 就地修改，存盘只写回你改过的地方。
+    
+  </p>
+  <div class="actions">
+    <a class="btn btn-primary" href="https://github.com/chengffei/nib/releases/latest/download/Nib.dmg">
+      下载 Nib
+    </a>
+    <a class="btn btn-secondary" href="https://github.com/chengffei/nib">
+      查看源码
+    </a>
+  </div>
+  <p class="meta">
+    免费开源 · 原生 Mac 应用 · 约 6 MB · macOS 15 或更高
+    
+  </p>
+</header>
+
+<div class="wrap">
+  <div class="shot">
+    <img src="../images/zh-read.png" width="1600" height="1000" alt="Nib 打开一份排好版的 Markdown 速查，左侧是工作区与 git 改动圆点" loading="eager">
+  </div>
+</div>
+
+<section id="about" class="wrap narrow">
+  <h2>Nib 是什么？</h2>
+  <p class="definition">
+    
+    Nib 是免费开源的 Mac Markdown 应用。它打开文件时直接显示排好版的文档，而不是源码。按 ⌘E 就地编辑，只有光标所在行露出 Markdown 语法，手感同 Typora。存盘只写回你的改动，文件在 git 里保持干净。别的程序改写了文件它会自动刷新，所有文档并在一个窗口的标签里，还能搜整个文件夹。原生应用，约 6 MB，需要 macOS 15。
+  </p>
+</section>
+
+<section id="features" class="band">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <h2>先读，再改。</h2>
+        <p class="section-lead">
+          读的时候，它就是一页排好的文档。
+          
+        </p>
+        <ul class="points">
+          <li><b>打开就是成品。</b>标题、表格、清单、代码块排好版，链接直接点，不会误触改动。</li>
+          <li><b><kbd>⌘E</kbd> 就地改。</b>只有光标所在行露出语法，其余照样排好。</li>
+          <li><b>层级一眼可辨。</b>编辑时左侧留白标出 H1 到 H6。</li>
+          <li><b><kbd>⌘/</kbd> 看源码。</b>整篇等宽源码，随时切回。</li>
+        </ul>
+      </div>
+      <div class="shot">
+        <img src="../images/zh-edit.png" width="1600" height="1105" alt="Nib 编辑模式（深色）：当前行露出 #，左侧标出标题层级" loading="lazy">
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="split">
+    <div>
+      <h2>不动你的文件。</h2>
+      <p class="section-lead">
+        改一个词，<code>git diff</code> 里就只有这一个词。
+        
+      </p>
+      <ul class="points">
+        <li><b>原样写回。</b>换行符、空行、缩进、没碰过的行，一个字节都不变。</li>
+        <li><b>不加私货。</b>不写元数据，不改格式，不留隐藏文件。</li>
+        <li><b>不跑脚本。</b>不渲染文件里的原始 HTML，下载来的文件也放心打开。</li>
+      </ul>
+    </div>
+    <div class="diff" aria-label="git diff">
+      <div class="h">$ git diff cheat-sheet.md</div>
+      <div class="h">@@ -19,3 +19,3 @@</div>
+      <div> - [x] Task lists start with `- [ ]`</div>
+      <div> - [x] Press Tab to nest a list item</div>
+      <div class="del">-- [ ] Wrap text in two asterisks for **bold**</div>
+      <div class="add">+- [x] Wrap text in two asterisks for **bold**</div>
+    </div>
+  </div>
+</section>
+
+<section id="tools" class="band">
+  <div class="wrap">
+    <h2>为工具写的 Markdown 而做。</h2>
+    <p class="section-lead">
+      编程 Agent 的方案、脚本的报告、构建工具的文档。你多半在读，偶尔改一行。
+      
+    </p>
+    <div class="grid">
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg>
+        <h3>0.1 秒刷新</h3>
+        <p>终端、脚本或 Agent 改写了文件，打开着的页面自动更新。</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M8 6V4h8v2"/></svg>
+        <h3>一个窗口，多个标签</h3>
+        <p>从访达、终端、链接打开的文件都并进同一个窗口。<kbd>⌘1</kbd> 到 <kbd>⌘9</kbd> 切换。</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="9" r="2.2"/><path d="M6 8.2v7.6"/><path d="M18 11.2c0 3-4 3.3-10.2 5.6"/></svg>
+        <h3>带 git 圆点的工作区</h3>
+        <p>改过的文件标橙点，新文件标绿点，提交后随即消失。</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+        <h3>什么都找得到</h3>
+        <p><kbd>⇧⌘O</kbd> 按名字开文件，<kbd>⇧⌘F</kbd> 搜全部内容并跳到那一行。2500 个文件不到 0.25 秒。</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 5 14h6l-1 7 8-11h-6z"/></svg>
+        <h3>随叫随到</h3>
+        <p>关掉最后一个窗口也不退出，不占 Dock。下一个文件约 0.15 秒打开。</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+        <h3>后台标签休眠</h3>
+        <p>久未查看的标签交还内存，切回来还在原处。</p>
+      </div>
+    </div>
+    <div class="shot">
+      <img src="../images/zh-search.png" width="1600" height="1000" alt="Nib 搜索工作区里的全部 Markdown" loading="lazy">
+    </div>
+  </div>
+</section>
+
+<section id="writing" class="band">
+  <div class="wrap">
+    <h2>写起来也顺手。</h2>
+    <p class="section-lead">
+      Typora 用户熟悉的那些，都在。
+      
+    </p>
+    <div class="grid">
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 8"/></svg>
+        <h3>粘贴截图</h3>
+        <p>存进文档旁的「文档名.assets」，插入相对路径。认 <code>typora-copy-images-to</code>。</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 13.5h6M9 17h3"/></svg>
+        <h3>网页粘贴成 Markdown</h3>
+        <p>浏览器、Google Docs、飞书里的富文本转成干净的 Markdown。</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14.5h18M10 4v16"/></svg>
+        <h3>表格与任务列表</h3>
+        <p>CommonMark 与 GitHub 风格 Markdown，<kbd>Tab</kbd> 调列表层级。</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M8 12h12M8 18h12"/><circle cx="4.5" cy="12" r=".6"/><circle cx="4.5" cy="18" r=".6"/></svg>
+        <h3>大纲、专注、打字机</h3>
+        <p><kbd>⇧⌘L</kbd> 大纲，<kbd>F8</kbd> 只亮当前段落，<kbd>F9</kbd> 让当前行停在中间。</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 19h14"/></svg>
+        <h3>导出与打印</h3>
+        <p>PDF，或图片内嵌的单文件 HTML，直接发给别人。</p>
+      </div>
+      <div class="card">
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17" fill="currentColor" stroke="none" opacity=".25"/></svg>
+        <h3>主题随你</h3>
+        <p>浅色、深色、暖纸，也能读 Typora 主题。字体、行高、快捷键都能改。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="compare" class="wrap">
+  <h2>Nib 与 Typora、MarkEdit、Obsidian 对比</h2>
+  <p class="section-lead">
+    
+    Typora 定义了就地编辑，MarkEdit 是快速的原生源码编辑器，Obsidian 是一整套笔记系统。Nib 用来读 Markdown，需要时顺手改。
+  </p>
+  <div class="table-scroll">
+  <table class="compare">
+    <thead><tr><th></th><th>Nib</th><th>Typora</th><th>MarkEdit</th><th>Obsidian</th></tr></thead>
+    <tbody>
+      <tr><td>打开文件时</td><td>排好版的页面</td><td>实时预览编辑器</td><td>高亮的源码</td><td>实时预览编辑器</td></tr>
+      <tr><td>文件放哪</td><td>任意位置</td><td>任意位置</td><td>任意位置</td><td>仓库文件夹内</td></tr>
+      <tr><td>侧栏 git 状态</td><td>✓</td><td>—</td><td>—</td><td>需装插件</td></tr>
+      <tr><td>界面</td><td>原生外壳，CodeMirror 内核</td><td>Electron</td><td>原生外壳，CodeMirror 内核</td><td>Electron</td></tr>
+      <tr><td>平台</td><td>Mac</td><td>Mac · Windows · Linux</td><td>Mac</td><td>Mac · Windows · Linux · iOS · Android</td></tr>
+      <tr><td>价格 · 协议</td><td>免费 · GPL-3.0</td><td>收费 · 闭源</td><td>免费 · MIT</td><td>免费 · 闭源</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="install" class="band">
+  <div class="wrap">
+    <h2>安装</h2>
+    <p class="section-lead">
+      Nib 没有经过 Apple 公证，第一次打开需要放行一次。
+      
+    </p>
+    <div class="actions install-download">
+      <a class="btn btn-primary" href="https://github.com/chengffei/nib/releases/latest/download/Nib.dmg">
+        下载 Nib.dmg
+      </a>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <h3>拖进应用程序</h3>
+        <p>打开 Nib.dmg，把 Nib 拖进「应用程序」文件夹。</p>
+      </div>
+      <div class="step">
+        <h3>放行一次</h3>
+        <p>先打开一次并点「完成」，再到「系统设置 › 隐私与安全性」点「仍要打开」。</p>
+      </div>
+      <div class="step">
+        <h3>设为默认</h3>
+        <p>在访达选中一个 .md，按 <kbd>⌘I</kbd>，「打开方式」选 Nib，点「全部更改」。</p>
+      </div>
+    </div>
+    <p class="note">
+      需要 macOS 15 或更高。通用应用，支持 Apple 芯片与 Intel。
+      
+    </p>
+  </div>
+</section>
+
+<section class="wrap">
+  <h2>快捷键</h2>
+  <p class="section-lead">
+    都能在设置里改。
+    
+  </p>
+  <table class="keys">
+    <tr><td>编辑 / 阅读</td><td><kbd>⌘E</kbd></td></tr>
+    <tr><td>源码</td><td><kbd>⌘/</kbd></td></tr>
+    <tr><td>快速打开</td><td><kbd>⇧⌘O</kbd></td></tr>
+    <tr><td>搜索工作区</td><td><kbd>⇧⌘F</kbd></td></tr>
+    <tr><td>侧栏</td><td><kbd>⌃⌘S</kbd></td></tr>
+    <tr><td>大纲</td><td><kbd>⇧⌘L</kbd></td></tr>
+    <tr><td>专注 / 打字机</td><td><kbd>F8</kbd><kbd>F9</kbd></td></tr>
+    <tr><td>切换标签</td><td><kbd>⌘1</kbd>–<kbd>⌘9</kbd></td></tr>
+    <tr><td>重新打开关掉的标签</td><td><kbd>⇧⌘T</kbd></td></tr>
+  </table>
+</section>
+
+<section id="faq" class="band">
+  <div class="wrap">
+    <h2>常见问题</h2>
+    <p class="section-lead">最常被问到的几件事。</p>
+    <div class="faq">
+      <details><summary>Mac 上有免费开源的 Typora 替代品吗？</summary><p>Nib 的就地编辑和 Typora 一样，只有光标所在行露出语法。它免费、以 GPL-3.0 开源、是原生 Mac 应用。和 Typora 不同，它打开文件先进阅读视图，按 ⌘E 编辑。它也能用 Typora 主题。</p></details>
+      <details><summary>怎么读 Claude Code、Codex 这类编程 Agent 写的 Markdown？</summary><p>把 Nib 设为 .md 的默认应用，然后在终端里点文件路径，或从访达打开。文件以排好的版面打开，并进已有窗口的标签里；Agent 改写文件时自动刷新。把项目文件夹加进侧栏，还能看到上次提交后改了哪些文件。</p></details>
+      <details><summary>Nib 会改动我的 Markdown 文件吗？</summary><p>只改你编辑的地方。存盘时写回你的改动，其余逐字节保持原样，包括换行符和空行。Nib 不写元数据，不留隐藏文件。</p></details>
+      <details><summary>能用 Typora 主题吗？</summary><p>能。把主题的 CSS 和同名文件夹放进 ~/Library/Application Support/Nib/themes，在设置里选。阅读视图完整套用主题，编辑时借用主题的颜色和字体。Nib 兼容格式，但不附带 Typora 的主题。</p></details>
+      <details><summary>Nib 免费吗？</summary><p>免费，以 GPL-3.0 协议开源。没有账号，没有付费项。</p></details>
+      <details><summary>为什么 macOS 提示无法验证开发者？</summary><p>Nib 没有经过 Apple 公证。先打开一次并关掉提示，再到「系统设置 › 隐私与安全性」点「仍要打开」。只需一次。</p></details>
+      <details><summary>支持数学公式或 Mermaid 图吗？</summary><p>暂不支持，这类代码块按代码显示。</p></details>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>
+      Nib 以 GPL-3.0 协议开源 · 编辑基于 <a href="https://codemirror.net/">CodeMirror</a>，阅读视图基于 <a href="https://github.com/markdown-it/markdown-it">markdown-it</a> · 与 Typora 无关
+      
+    </p>
+    <p><a href="https://github.com/chengffei/nib">github.com/chengffei/nib</a></p>
+    <p>
+      
+      作者 <a href="https://github.com/chengffei">Felix</a> · 版本 0.4.1 · 最后更新 <time datetime="2026-11-24">2026 年 11 月 24 日</time>
+    </p>
+  </div>
+</footer>
+
+<script>
+  for (const d of document.querySelectorAll('details.langs')) {
+    document.addEventListener('click', e => { if (!d.contains(e.target)) d.removeAttribute('open') })
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') d.removeAttribute('open') })
+  }
+</script>
+</body>
+</html>

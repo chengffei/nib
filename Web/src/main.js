@@ -1,7 +1,8 @@
 // Nib editor core: CodeMirror 6. The document is the text itself; all rendering is a decoration layer.
 import { Annotation, Compartment, EditorSelection, EditorState } from '@codemirror/state'
 import { EditorView, keymap } from '@codemirror/view'
-import { defaultKeymap, history, historyKeymap, indentWithTab, redo, undo } from '@codemirror/commands'
+import { defaultKeymap, history, historyKeymap, redo, undo } from '@codemirror/commands'
+import { listIndentKeymap } from './listIndent.js'
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { HighlightStyle, LanguageDescription, StreamLanguage, ensureSyntaxTree, syntaxHighlighting } from '@codemirror/language'
 import { SearchQuery, findNext, highlightSelectionMatches, openSearchPanel, search, searchKeymap, setSearchQuery } from '@codemirror/search'
@@ -269,7 +270,7 @@ function makeState(doc) {
         { key: 'Mod-i', run: toggleWrap('*') },
         ...searchKeymap,
         ...historyKeymap,
-        indentWithTab,
+        ...listIndentKeymap,
         ...defaultKeymap,
       ]),
       EditorView.domEventHandlers({

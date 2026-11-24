@@ -3,8 +3,6 @@
   color-scheme: light dark;
   --fs: 16px;
   --lh: 1.75;
-  /* The whole list shifts right so bullets and text form separate columns (as in Bear) */
-  --li-shift: 0.75em;
   /* Content width follows the window: side margins flex between 40 and 140px with window width, and the text fills the rest. */
   --gutter: clamp(40px, 7vw, 140px);
   --mono-w: 0.602em;
@@ -108,9 +106,10 @@ html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
 .nib .cm-line.nib-quote-2 { padding-left: 36px; background: linear-gradient(var(--sep), var(--sep)) 18px 0 / 3px 100% no-repeat; }
 
 /* Lists: the marker uses a monospace font so the hanging indent lines up with wrapped lines */
-.nib .cm-line.nib-li { padding-left: calc(var(--nib-indent) * var(--mono-w) + var(--li-shift)); text-indent: calc(var(--nib-indent) * var(--mono-w) * -1); }
+.nib .cm-line.nib-li { padding-left: calc(var(--nib-indent) * var(--mono-w)); text-indent: calc(var(--nib-indent) * var(--mono-w) * -1); }
 .nib .nib-li-prefix { font-family: var(--mono); tab-size: 4; color: var(--text2); font-variant-numeric: tabular-nums; }
 .nib .nib-bullet { display: inline-block; text-align: center; text-indent: 0; color: var(--accent); font-family: var(--mono); transform: scale(1.2); }
+.nib .nib-onum { display: inline-block; text-indent: 0; }
 .nib .nib-task { display: inline-block; text-indent: 0; text-align: left; font-family: var(--mono); }
 .nib .nib-task input { margin: 0; width: 0.95em; height: 0.95em; vertical-align: -0.1em; accent-color: var(--accent); }
 

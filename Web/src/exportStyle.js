@@ -17,6 +17,9 @@ strong { font-weight: 650; }
 del { color: #6e6e73; }
 ul, ol { margin: 0 0 0.9em; padding-left: 1.6em; }
 li > p { margin: 0; }
+ol ol { list-style-type: lower-alpha; }
+ol ol ol { list-style-type: lower-roman; }
+ol ol ol ol { list-style-type: decimal; }
 li::marker { color: #0071e3; }
 .task-list-item { list-style: none; }
 .task-list-item > input { float: left; margin: 0.5em 0 0 -1.5em; }

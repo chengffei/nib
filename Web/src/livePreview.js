@@ -43,6 +43,52 @@ class BulletWidget extends WidgetType {
   }
 }
 
+// Nested ordered lists are numbered 1. / a. / i. by depth (display only; the source keeps digits, as CommonMark requires).
+const ROMAN = [['m', 1000], ['cm', 900], ['d', 500], ['cd', 400], ['c', 100], ['xc', 90], ['l', 50], ['xl', 40], ['x', 10], ['ix', 9], ['v', 5], ['iv', 4], ['i', 1]]
+function levelNumber(num, depth) {
+  const style = depth % 3
+  if (style === 0 || num < 1) return String(num)
+  if (style === 1) {
+    let s = ''
+    for (let n = num; n > 0; n = Math.floor((n - 1) / 26)) s = String.fromCharCode(97 + ((n - 1) % 26)) + s
+    return s
+  }
+  let s = ''
+  for (let n = num, k = 0; n > 0; ) if (n >= ROMAN[k][1]) { s += ROMAN[k][0]; n -= ROMAN[k][1] } else k++
+  return s
+}
+
+/** Ordered item marker for the item's nesting depth and position, or null at the top level. */
+function orderedLabel(item, doc) {
+  const list = item.parent
+  let depth = 0
+  for (let p = list; p; p = p.parent) if (p.name === 'OrderedList') depth++
+  if (depth < 2) return null
+  const first = list.firstChild?.getChild('ListMark')
+  const start = first ? parseInt(doc.sliceString(first.from, first.to), 10) || 1 : 1
+  let index = 0
+  for (let c = item.prevSibling; c; c = c.prevSibling) if (c.name === 'ListItem') index++
+  return levelNumber(start + index, depth - 1)
+}
+
+class OrderedWidget extends WidgetType {
+  constructor(text, cols) {
+    super()
+    this.text = text
+    this.cols = cols
+  }
+  eq(other) {
+    return other.text === this.text && other.cols === this.cols
+  }
+  toDOM() {
+    const span = document.createElement('span')
+    span.className = 'nib-onum'
+    span.style.width = `calc(${this.cols} * var(--mono-w))`
+    span.textContent = this.text
+    return span
+  }
+}
+
 class CheckboxWidget extends WidgetType {
   /** Replaces the whole "- [ ]" span; offset is the bracket's offset relative to the list marker. */
   constructor(checked, offset) {
@@ -358,10 +404,14 @@ function build(view) {
           if (doc.sliceString(end, end + 1) === ' ') end++
           const active = touches(act, line.from, line.to)
           const lead = doc.sliceString(line.from, n.from)
+          const markText = doc.sliceString(n.from, n.to)
+          const label = !active && !isTask && /\d/.test(markText) ? orderedLabel(item, doc) : null
+          const labelText = label && label + markText.slice(-1)
+          const labelCols = label && Math.max(labelText.length, markText.length)
           // Hanging indent only applies when the line starts with pure indentation (not for lists inside blockquotes)
           if (/^[ \t]*$/.test(lead)) {
             // For task items not being edited, "- [ ]" collapses into a two-character-wide checkbox
-            const shown = isTask && !active ? `${lead}xx ` : doc.sliceString(line.from, end)
+            const shown = isTask && !active ? `${lead}xx ` : label ? `${lead}${'x'.repeat(labelCols)}${doc.sliceString(n.to, end)}` : doc.sliceString(line.from, end)
             let cols = 0
             for (const ch of shown) cols += ch === '\t' ? 4 - (cols % 4) : 1
             lineDeco(line.from, 'nib-li', `--nib-indent:${cols}`)
@@ -374,6 +424,8 @@ function build(view) {
             decos.push(Decoration.replace({ widget }).range(n.from, marker.to))
           } else if (/^[-*+]$/.test(doc.sliceString(n.from, n.to))) {
             decos.push(Decoration.replace({ widget: new BulletWidget(1) }).range(n.from, n.to))
+          } else if (label) {
+            decos.push(Decoration.replace({ widget: new OrderedWidget(labelText, labelCols) }).range(n.from, n.to))
           }
         }
       },

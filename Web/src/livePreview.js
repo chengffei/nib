@@ -1,9 +1,10 @@
 // Live preview: the cursor line shows source, other lines hide syntax markers.
 // Only the display (decorations) changes, never the document, so what gets saved is always the original text.
-import { Decoration, ViewPlugin, WidgetType } from '@codemirror/view'
+import { Decoration, EditorView, ViewPlugin, WidgetType } from '@codemirror/view'
 import { syntaxTree } from '@codemirror/language'
-import { Facet } from '@codemirror/state'
+import { Facet, StateField } from '@codemirror/state'
 import { t } from './i18n.js'
+import { isMermaid, mountMermaid } from './mermaid.js'
 
 /** Read mode: no line is "being edited"; the whole document is rendered. */
 export const reading = Facet.define({ combine: (values) => values.some(Boolean) })
@@ -470,3 +471,79 @@ export const livePreview = ViewPlugin.fromClass(
     },
   },
 )
+
+/** A ```mermaid block shown as its diagram. Clicking it (outside read mode) puts the cursor inside, which reveals the source. */
+class MermaidWidget extends WidgetType {
+  constructor(code) {
+    super()
+    this.code = code
+  }
+  eq(other) {
+    return other.code === this.code
+  }
+  get estimatedHeight() {
+    return 240
+  }
+  toDOM(view) {
+    const box = document.createElement('div')
+    box.className = 'nib-mermaid'
+    mountMermaid(box, this.code, { themeFrom: view.contentDOM, onChange: () => view.requestMeasure() })
+    box.addEventListener('mousedown', (event) => {
+      if (view.state.facet(reading)) return
+      event.preventDefault()
+      const start = view.posAtDOM(box)
+      const line = view.state.doc.lineAt(start)
+      const anchor = line.number < view.state.doc.lines ? view.state.doc.line(line.number + 1).from : line.to
+      view.dispatch({ selection: { anchor } })
+      view.focus()
+    })
+    return box
+  }
+  ignoreEvent() {
+    return true
+  }
+}
+
+// Leaf blocks that cannot contain a fence; skipping them keeps the whole-document walk cheap.
+const LEAF = /^(Paragraph|ATXHeading\d|SetextHeading\d|Table|HTMLBlock|CodeBlock|Frontmatter|HorizontalRule|LinkReference)$/
+
+function mermaidBlocks(state) {
+  const { doc } = state
+  const act = activeRanges(state)
+  const decos = []
+  syntaxTree(state).iterate({
+    enter(n) {
+      if (LEAF.test(n.name)) return false
+      if (n.name !== 'FencedCode') return
+      const info = n.node.getChild('CodeInfo')
+      if (!info || !isMermaid(doc.sliceString(info.from, info.to)) || touches(act, n.from, n.to)) return false
+      const first = doc.lineAt(n.from)
+      const last = doc.lineAt(n.to)
+      // Only fences that own their lines (indentation or quote markers before them are fine); "- ```mermaid" stays as code.
+      if (!/^[\s>]*$/.test(doc.sliceString(first.from, n.from))) return false
+      // An unclosed fence runs to the end of the document while it is still being typed; leave it as code.
+      const marks = n.node.getChildren('CodeMark')
+      if (marks.length < 2) return false
+      const text = n.node.getChild('CodeText')
+      let code = text ? doc.sliceString(text.from, text.to) : ''
+      if (doc.sliceString(first.from, n.from).includes('>')) code = code.replace(/^[ \t]*(> ?)+/gm, '')
+      decos.push(Decoration.replace({ widget: new MermaidWidget(code), block: true }).range(first.from, last.to))
+      return false
+    },
+  })
+  return Decoration.set(decos)
+}
+
+/** Block widgets must come from state, not from a view plugin, so diagrams live in their own field next to livePreview. */
+export const mermaidPreview = StateField.define({
+  create: mermaidBlocks,
+  update(decos, tr) {
+    // During IME composition just shift along with the text, as livePreview does.
+    if (tr.isUserEvent('input.type.compose')) return decos.map(tr.changes)
+    if (tr.docChanged || tr.selection || tr.startState.facet(reading) !== tr.state.facet(reading) || syntaxTree(tr.startState) !== syntaxTree(tr.state)) {
+      return mermaidBlocks(tr.state)
+    }
+    return decos
+  },
+  provide: (field) => EditorView.decorations.from(field),
+})

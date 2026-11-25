@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "esbuild src/main.js --bundle --minify --format=iife --target=safari17 --outfile=../Nib/Editor/editor.js && cp src/index.html src/style.css ../Nib/Editor/"
+    "build": "esbuild src/main.js --bundle --minify --format=iife --target=safari17 --outfile=../Nib/Editor/editor.js && cp src/index.html src/style.css node_modules/mermaid/dist/mermaid.min.js ../Nib/Editor/"
   },
   "dependencies": {
     "@codemirror/commands": "^6",
@@ -26,6 +26,7 @@
     "@codemirror/view": "^6",
     "@lezer/highlight": "^1",
     "markdown-it": "^14.3.3",
+    "mermaid": "^11.17.2",
     "turndown": "^7.2.0",
     "turndown-plugin-gfm": "^1.0.2"
   },

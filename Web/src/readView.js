@@ -5,6 +5,7 @@ import MarkdownIt from 'markdown-it'
 import { keepShortColumns } from './tableColumns.js'
 import { highlightCode, tagHighlighter, tags as t } from '@lezer/highlight'
 import { t as tr } from './i18n.js'
+import { isDarkAt, isMermaid, mountMermaid, renderMermaid } from './mermaid.js'
 
 // Code blocks are coloured with Typora's (CodeMirror 5) class names, which is what selectors like .cm-s-inner .cm-keyword in themes recognise.
 const cm5 = tagHighlighter([
@@ -53,6 +54,8 @@ export function createReadView({ codeLanguages, resolveImage, openLink, attachSc
     const token = tokens[idx]
     const name = token.info.trim().split(/\s+/)[0] || ''
     const code = token.content.replace(/\n$/, '')
+    // Same wrapper Typora exports for diagrams; the SVG is filled in by decorate (or awaited in renderHTML).
+    if (isMermaid(name)) return `<div class="md-diagram-panel md-fences-adv-panel nib-mermaid" data-code="${escape(code)}"></div>\n`
     const lines = [[]]
     const desc = languageFor(name)
     const parser = desc?.support?.language?.parser
@@ -97,6 +100,7 @@ export function createReadView({ codeLanguages, resolveImage, openLink, attachSc
     const { source, meta } = split(text)
     write.innerHTML = toHTML(source, meta)
     decorate(write)
+    for (const box of write.querySelectorAll('.nib-mermaid')) mountMermaid(box, box.dataset.code, { themeFrom: write })
   }
 
   function split(text) {
@@ -112,12 +116,26 @@ export function createReadView({ codeLanguages, resolveImage, openLink, attachSc
 
   const toHTML = (source, meta) => meta + md.render(source)
 
-  /** The whole document as HTML with the Typora export structure, for Print and Export (never touches the visible layer). */
-  function renderHTML(text) {
+  /** The whole document as HTML with the Typora export structure, for Print and Export (never touches the visible layer).
+   *  themed: exporting with the Typora theme, so diagrams follow its light or dark text; otherwise the light export style. */
+  async function renderHTML(text, themed) {
     const { source, meta } = split(text)
     const root = document.createElement('div')
     root.innerHTML = toHTML(source, meta)
     decorate(root)
+    const dark = themed && isDarkAt(write)
+    await Promise.all(
+      [...root.querySelectorAll('.nib-mermaid')].map(async (box) => {
+        try {
+          box.innerHTML = await renderMermaid(box.dataset.code, dark)
+        } catch {
+          const pre = document.createElement('pre')
+          pre.textContent = box.dataset.code
+          box.replaceChildren(pre)
+        }
+        box.removeAttribute('data-code')
+      }),
+    )
     return root.innerHTML
   }
 

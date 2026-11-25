@@ -9,6 +9,7 @@ const TABLES = {
     close: '关闭', Done: '完成', 'No results': '无结果', '$1 of $2': '$1/$2', 'current match': '当前匹配',
     'on line': '在第', 'replaced $ matches': '已替换 $ 处', 'replaced match on line $': '已替换第 $ 行的匹配',
     'Image unavailable: ': '图片无法显示：',
+    'Diagram could not be rendered: ': '图表无法渲染：',
   },
   'zh-Hant': {
     Find: '尋找', Replace: '取代', next: '下一個', previous: '上一個', all: '全部',
@@ -16,6 +17,7 @@ const TABLES = {
     close: '關閉', Done: '完成', 'No results': '沒有結果', '$1 of $2': '$1/$2', 'current match': '目前相符項目',
     'on line': '在第', 'replaced $ matches': '已取代 $ 處', 'replaced match on line $': '已取代第 $ 行的相符項目',
     'Image unavailable: ': '無法顯示圖片：',
+    'Diagram could not be rendered: ': '無法繪製圖表：',
   },
   ja: {
     Find: '検索', Replace: '置換', next: '次へ', previous: '前へ', all: 'すべて',
@@ -23,6 +25,7 @@ const TABLES = {
     close: '閉じる', Done: '完了', 'No results': '一致なし', '$1 of $2': '$1/$2', 'current match': '現在の一致',
     'on line': '行', 'replaced $ matches': '$ 件を置換しました', 'replaced match on line $': '$ 行目の一致を置換しました',
     'Image unavailable: ': '画像を表示できません：',
+    'Diagram could not be rendered: ': '図を描画できません：',
   },
   ko: {
     Find: '찾기', Replace: '대치', next: '다음', previous: '이전', all: '모두',
@@ -30,6 +33,7 @@ const TABLES = {
     close: '닫기', Done: '완료', 'No results': '결과 없음', '$1 of $2': '$1/$2', 'current match': '현재 일치 항목',
     'on line': '줄', 'replaced $ matches': '$개 항목을 대치함', 'replaced match on line $': '$번째 줄의 일치 항목을 대치함',
     'Image unavailable: ': '이미지를 표시할 수 없음: ',
+    'Diagram could not be rendered: ': '다이어그램을 렌더링할 수 없음: ',
   },
   de: {
     Find: 'Suchen', Replace: 'Ersetzen', next: 'Weiter', previous: 'Zurück', all: 'Alle',
@@ -37,6 +41,7 @@ const TABLES = {
     close: 'Schließen', Done: 'Fertig', 'No results': 'Keine Treffer', '$1 of $2': '$1 von $2', 'current match': 'Aktueller Treffer',
     'on line': 'in Zeile', 'replaced $ matches': '$ Treffer ersetzt', 'replaced match on line $': 'Treffer in Zeile $ ersetzt',
     'Image unavailable: ': 'Bild nicht verfügbar: ',
+    'Diagram could not be rendered: ': 'Diagramm kann nicht dargestellt werden: ',
   },
   fr: {
     Find: 'Rechercher', Replace: 'Remplacer', next: 'Suivant', previous: 'Précédent', all: 'Tout',
@@ -44,6 +49,7 @@ const TABLES = {
     close: 'Fermer', Done: 'Terminé', 'No results': 'Aucun résultat', '$1 of $2': '$1 sur $2', 'current match': 'Occurrence actuelle',
     'on line': 'à la ligne', 'replaced $ matches': '$ occurrences remplacées', 'replaced match on line $': 'Occurrence remplacée à la ligne $',
     'Image unavailable: ': 'Image indisponible : ',
+    'Diagram could not be rendered: ': 'Impossible d’afficher le diagramme : ',
   },
   es: {
     Find: 'Buscar', Replace: 'Reemplazar', next: 'Siguiente', previous: 'Anterior', all: 'Todo',
@@ -51,6 +57,7 @@ const TABLES = {
     close: 'Cerrar', Done: 'OK', 'No results': 'Sin resultados', '$1 of $2': '$1 de $2', 'current match': 'Coincidencia actual',
     'on line': 'en la línea', 'replaced $ matches': '$ coincidencias reemplazadas', 'replaced match on line $': 'Coincidencia reemplazada en la línea $',
     'Image unavailable: ': 'Imagen no disponible: ',
+    'Diagram could not be rendered: ': 'No se puede mostrar el diagrama: ',
   },
 }
 

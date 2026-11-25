@@ -22,7 +22,8 @@ import { java } from '@codemirror/lang-java'
 import { cpp } from '@codemirror/lang-cpp'
 import { shell } from '@codemirror/legacy-modes/mode/shell'
 import { swift } from '@codemirror/legacy-modes/mode/swift'
-import { links, livePreview, post, reading, resolveImage } from './livePreview.js'
+import { links, livePreview, mermaidPreview, post, reading, resolveImage } from './livePreview.js'
+import { refreshMermaid } from './mermaid.js'
 import { createReadView } from './readView.js'
 import { createTyporaTheme } from './typoraTheme.js'
 import { phrases } from './i18n.js'
@@ -174,6 +175,8 @@ function applySettings(s) {
   if (typora.setCSS(s.typoraCSS)) syncReader()
   setFocusModes(typeof view !== 'undefined' ? view : null, { focus: s.focusMode, typewriter: s.typewriterMode })
   if (typeof view !== 'undefined') view.requestMeasure()
+  // Diagrams are drawn for light or dark; redraw them when the page around them flips.
+  refreshMermaid(document.body)
 }
 
 /** Measures the actual character width of the monospace font; list hanging indents are aligned with it. */
@@ -190,7 +193,7 @@ function measureMono() {
 // Three modes: read renders the whole document read-only (default); edit reveals source on the cursor line; source shows the whole document as monospace source.
 const previewPart = new Compartment()
 const readPart = new Compartment()
-const previewFor = (mode) => (mode === 'source' ? [] : [livePreview, tables])
+const previewFor = (mode) => (mode === 'source' ? [] : [livePreview, mermaidPreview, tables])
 const readFor = (mode) =>
   mode === 'read' ? [reading.of(true), EditorView.editable.of(false), EditorState.readOnly.of(true)] : []
 let mode = 'read'
@@ -380,6 +383,7 @@ function syncReader() {
 }
 
 applySettings(window.__nibSettings || {})
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => requestAnimationFrame(() => refreshMermaid(document.body)))
 
 // Create an empty editor first: the shell pre-warms it, so opening a document only needs load to fill in the content.
 mode = 'edit'
@@ -486,13 +490,13 @@ window.nib = {
   getText: currentText,
   /** A standalone HTML page of the document for Print / Export: the Typora theme if one is selected, else Nib's export style.
    *  Local images keep their nib-file URLs; the shell inlines them for HTML export. */
-  exportHTML(title) {
+  async exportHTML(title) {
     const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
     const css = typora.exportCSS || EXPORT_CSS
     const lang = document.documentElement.lang || 'zh-CN'
     return `<!doctype html>\n<html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">` +
       `<title>${esc(title || '')}</title><style>${css}</style></head>` +
-      `<body class="typora-export"><div class="typora-export-content"><div id="write">${reader.renderHTML(currentText())}</div></div></body></html>`
+      `<body class="typora-export"><div class="typora-export-content"><div id="write">${await reader.renderHTML(currentText(), !!typora.exportCSS)}</div></div></body></html>`
   },
   /** Paste and Match Style: the clipboard's plain text exactly as it is. */
   insertPlain(text) {

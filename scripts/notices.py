@@ -11,8 +11,15 @@ pkgs = set()
 for f in json.load(open(meta))['inputs']:
     m = re.match(r'node_modules/((?:@[^/]+/)?[^/]+)', f)
     if m: pkgs.add(m.group(1))
+# mermaid ships prebuilt as Nib/Editor/mermaid.min.js; bundle its unbundled core once just to learn what it contains.
+subprocess.run(['npx', 'esbuild', 'node_modules/mermaid/dist/mermaid.core.mjs', '--bundle', '--format=esm', f'--metafile={meta}',
+                '--outfile=/dev/null', '--log-level=error'], cwd=web, check=True)
+pkgs.add('mermaid')
+for f in json.load(open(meta))['inputs']:
+    m = re.match(r'node_modules/((?:@[^/]+/)?[^/]+)', f)
+    if m: pkgs.add(m.group(1))
 
-out = ['# Third-Party Notices', '', 'Nib bundles the following open-source packages into `Nib/Editor/editor.js`.', '']
+out = ['# Third-Party Notices', '', 'Nib bundles the following open-source packages into `Nib/Editor/editor.js` and `Nib/Editor/mermaid.min.js`.', '']
 for p in sorted(pkgs):
     d = os.path.join(web, 'node_modules', p)
     info = json.load(open(os.path.join(d, 'package.json')))

@@ -136,7 +136,7 @@ html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
 
 /* Rendered tables: thin rules only, no background or border */
 .nib .nib-table-wrap { padding: 4px 0 8px; overflow-x: auto; cursor: text; }
-.nib .nib-table-wrap table { border-collapse: collapse; font-size: 0.94em; line-height: 1.45; }
+.nib .nib-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.94em; line-height: 1.45; }
 .nib .nib-table-wrap th, .nib .nib-table-wrap td { padding: 7px 20px 7px 0; text-align: left; vertical-align: top; border-bottom: 1px solid var(--sep); }
 .nib .nib-table-wrap th { font-weight: 600; }
 .nib .nib-table-wrap tr:last-child td { border-bottom: none; }

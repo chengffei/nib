@@ -35,7 +35,7 @@ pre.md-fences pre.CodeMirror-line { margin: 0; white-space: pre-wrap; font: inhe
 .cm-number, .cm-atom { color: #1c00cf; } .cm-type, .cm-variable-3, .cm-tag { color: #3e8087; }
 .cm-def, .cm-variable-2, .cm-property, .cm-attribute { color: #4b21b0; }
 figure.table-figure { margin: 0 0 1em; overflow-x: auto; }
-table { border-collapse: collapse; font-size: 0.92em; }
+table { width: 100%; border-collapse: collapse; font-size: 0.92em; }
 th, td { border: 1px solid #d2d2d7; padding: 6px 12px; text-align: left; vertical-align: top; }
 th { background: #f5f5f7; font-weight: 600; }
 tr { break-inside: avoid; }

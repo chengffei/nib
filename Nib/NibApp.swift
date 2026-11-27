@@ -20,6 +20,9 @@ struct NibApp: App {
         Self.log("app init")
         // Tabs are managed by WindowTabs, so system tab groups are turned off; clear the previously written "always merge into tabs".
         UserDefaults.standard.removeObject(forKey: "AppleWindowTabbingMode")
+        // Launching (or reopening with no windows) goes straight to a new Untitled document instead of the open panel
+        // that DocumentGroup shows when iCloud Drive is on.
+        UserDefaults.standard.set(false, forKey: "NSShowAppCentricOpenPanelInsteadOfUntitledFile")
         // Recents and window restoration at launch follow the settings (by default record recents, do not restore windows).
         // NSDocumentController must not be touched yet: SwiftUI needs to create it first, and creating it earlier crashes at launch.
         // Clearing recents is done after launch finishes (AppDelegate).

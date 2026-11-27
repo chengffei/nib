@@ -28,8 +28,8 @@ targets:
         CFBundleName: Nib
         CFBundleDisplayName: Nib
         CFBundleIconFile: AppIcon
-        CFBundleShortVersionString: "0.5.0"
-        CFBundleVersion: "6"
+        CFBundleShortVersionString: "0.5.1"
+        CFBundleVersion: "7"
         LSMinimumSystemVersion: "15.0"
         NSHumanReadableCopyright: "© 2026 Felix"
         CFBundleDocumentTypes:

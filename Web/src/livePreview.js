@@ -139,6 +139,42 @@ export function resolveImage(src) {
   }
 }
 
+/** Known intrinsic sizes of local images, keyed by file path. The shell reads them from image headers before a document loads,
+ *  and every image that finishes loading is recorded too, so an image takes its final size before it has loaded and nothing below it jumps. */
+export const imageSizes = new Map()
+
+function sizeKey(url) {
+  if (!url?.startsWith('nib-file:')) return null
+  try {
+    return decodeURIComponent(new URL(url).pathname)
+  } catch {
+    return null
+  }
+}
+
+export const imageSize = (url) => imageSizes.get(sizeKey(url))
+
+/** Gives an <img> its known size up front and fades it in once loaded; records the real size when it differs. */
+export function sizeImage(img, url, onChange) {
+  const key = sizeKey(url)
+  const known = key && imageSizes.get(key)
+  if (known) {
+    img.width = known[0]
+    img.height = known[1]
+  }
+  img.classList.add('nib-img-pending')
+  img.addEventListener('load', () => {
+    img.classList.remove('nib-img-pending')
+    const size = [img.naturalWidth, img.naturalHeight]
+    if (key && size[0] && (!known || known[0] !== size[0] || known[1] !== size[1])) {
+      imageSizes.set(key, size)
+      img.width = size[0]
+      img.height = size[1]
+    }
+    onChange?.()
+  })
+}
+
 class ImageWidget extends WidgetType {
   constructor(url, alt) {
     super()
@@ -156,7 +192,7 @@ class ImageWidget extends WidgetType {
     img.className = 'nib-img'
     img.alt = this.alt
     img.decoding = 'async'
-    img.addEventListener('load', () => view.requestMeasure())
+    sizeImage(img, this.url, () => view.requestMeasure())
     img.addEventListener('error', () => {
       const note = document.createElement('span')
       note.className = 'nib-img-missing'

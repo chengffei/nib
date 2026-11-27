@@ -487,11 +487,12 @@ struct SidebarToggle: View {
     @ObservedObject private var settings = AppSettings.shared
 
     var body: some View {
-        let visible = settings.alwaysShowTools || settings.showSidebar || hover.inside
-        TitlebarItem(active: settings.showSidebar, help: "Show Sidebar", action: { settings.showSidebar.toggle() }) {
+        let shown = settings.showSidebar && !controller.sidebarFolded
+        let visible = settings.alwaysShowTools || shown || hover.inside
+        TitlebarItem(active: shown, help: "Show Sidebar", action: { controller.toggleSidebar() }) {
             Image(systemName: "sidebar.left")
                 .font(.system(size: 13))
-                .foregroundStyle(settings.showSidebar ? .primary : .secondary)
+                .foregroundStyle(shown ? .primary : .secondary)
         }
         .accessibilityLabel(Text("Show Sidebar"))
         .padding(TabMetrics.inset)

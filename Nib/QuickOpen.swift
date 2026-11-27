@@ -57,8 +57,10 @@ enum WorkspaceIndex {
         return out
     }
 
-    /// Ranking: name contains the query (earlier is better) > name contains the letters in order > path contains them in order.
-    /// Several words separated by spaces must all match. An empty query lists the most recently modified files.
+    /// Ranking: name contains the query (earlier is better) > name contains the letters in order > name matches by pinyin
+    /// ("zw" or "zhongwen" for 中文) > path contains the query > path contains the letters in order > path matches by pinyin.
+    /// A literal match always outranks a pinyin one. Several words separated by spaces must all match.
+    /// An empty query lists the most recently modified files.
     static func rank(_ files: [WorkspaceFile], query: String) -> [WorkspaceFile] {
         let words = query.lowercased().split(separator: " ").map(String.init)
         guard !words.isEmpty else { return Array(files.sorted { $0.modified > $1.modified }.prefix(50)) }
@@ -73,10 +75,14 @@ enum WorkspaceIndex {
                     total += 1000 - name.distance(from: name.startIndex, to: range.lowerBound)
                 } else if isSubsequence(word, of: name) {
                     total += 500
+                } else if Pinyin.matches(word, in: name) {
+                    total += 400
                 } else if path.contains(word) {
                     total += 300
                 } else if isSubsequence(word, of: path) {
                     total += 100
+                } else if Pinyin.matches(word, in: file.folder) {
+                    total += 50
                 } else { ok = false; break }
             }
             if ok { scored.append((file, total - name.count)) }
@@ -94,10 +100,12 @@ enum WorkspaceIndex {
         return true
     }
 
-    /// Lines containing the query, case-insensitive. At most 5 per file and 300 in total; recently modified files first.
-    /// Files are scanned in parallel; results keep the recency order.
+    /// Lines containing the query, case-insensitive. Several words separated by spaces must all be on the line, in any order.
+    /// At most 5 per file and 300 in total; recently modified files first. Files are scanned in parallel; results keep the recency order.
     static func search(_ query: String, in files: [WorkspaceFile]) -> [TextHit] {
-        let needle = Array(query.utf8).map(lowerASCII)
+        let words = query.split(separator: " ").map(String.init)
+        guard let first = words.first else { return [] }
+        let needles = words.map { Array($0.utf8).map(lowerASCII) }
         let ordered = files.sorted { $0.modified > $1.modified }
         let slots = SlotBox(count: ordered.count)
         DispatchQueue.concurrentPerform(iterations: ordered.count) { index in
@@ -105,13 +113,13 @@ enum WorkspaceIndex {
             // Byte-level prefilter first (ASCII letters folded to lower case): decoding and case-insensitive
             // String search over a few thousand files takes seconds, a byte scan takes milliseconds.
             guard let data = try? Data(contentsOf: file.url, options: .mappedIfSafe),
-                  contains(data, needle), let text = String(data: data, encoding: .utf8) else { return }
+                  needles.allSatisfy({ contains(data, $0) }), let text = String(data: data, encoding: .utf8) else { return }
             var found: [TextHit] = []
             var number = 0
             text.enumerateLines { line, stop in
                 number += 1
-                guard line.range(of: query, options: .caseInsensitive) != nil else { return }
-                found.append(TextHit(file: file, line: number, snippet: snippet(line, around: query)))
+                guard words.allSatisfy({ line.range(of: $0, options: .caseInsensitive) != nil }) else { return }
+                found.append(TextHit(file: file, line: number, snippet: snippet(line, around: first)))
                 if found.count >= 5 { stop = true }
             }
             slots.set(index, found)
@@ -375,7 +383,10 @@ struct FinderPanel: View {
         case .text:
             guard textResults.indices.contains(selection) else { return }
             let hit = textResults[selection]
-            Reveal.open(hit.file.url, query: query, line: hit.line)
+            // The find bar looks for one string: the whole query when it occurs as typed, else its first word.
+            let line = hit.snippet.lowercased()
+            let find = line.contains(query.lowercased()) ? query : String(query.split(separator: " ").first ?? "")
+            Reveal.open(hit.file.url, query: find, line: hit.line)
         }
         close()
     }

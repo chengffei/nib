@@ -21,6 +21,19 @@ final class EditorController: ObservableObject {
     @Published var showWordCount = false
     /// Quick Open / Search in Workspace panel shown over this window (nil when closed).
     @Published var finder: FinderKind?
+    /// The sidebar is set to show but this window folded it away because it became too narrow (see DocumentView).
+    @Published var sidebarFolded = false
+    /// What this window actually shows: the shared setting, unless folded here.
+    var sidebarVisible: Bool { AppSettings.shared.showSidebar && !sidebarFolded }
+    /// The menu command and title-bar button: in a folded window they bring the sidebar back instead of turning the setting off.
+    func toggleSidebar() {
+        if sidebarFolded {
+            sidebarFolded = false
+            AppSettings.shared.showSidebar = true
+        } else {
+            AppSettings.shared.showSidebar.toggle()
+        }
+    }
     /// The editor has loaded the current text (reset while waking from hibernation).
     var ready = false
     weak var webView: EditorWebView?
@@ -96,7 +109,8 @@ struct EditorView: NSViewRepresentable {
         coordinator.text = $text
         if baseDirectory != coordinator.lastBase {
             coordinator.lastBase = baseDirectory
-            host.webView?.send("nib.setBaseDir(base)", ["base": baseDirectory ?? NSNull()])
+            host.webView?.send("nib.setImageSizes(sizes); nib.setBaseDir(base)",
+                               ["sizes": ImageSizes.scan(text, base: baseDirectory), "base": baseDirectory ?? NSNull()])
         }
         // Only external changes (disk reload, Versions rollback) are pushed to the web page; the user's own typing is not pushed back, otherwise the cursor would be reset.
         guard text != coordinator.lastText else { return }
@@ -104,7 +118,7 @@ struct EditorView: NSViewRepresentable {
         guard let webView = host.webView else { return }
         NibApp.log("push external len=\(text.utf16.count)")
         coordinator.lastText = text
-        webView.send("nib.setText(text)", ["text": text])
+        webView.send("nib.setImageSizes(sizes); nib.setText(text)", ["sizes": ImageSizes.scan(text, base: baseDirectory), "text": text])
     }
 
     @MainActor
@@ -428,8 +442,9 @@ final class EditorHost: NSView {
         coordinator.controller.ready = false
         let text = coordinator.text.wrappedValue
         coordinator.lastText = text
-        webView.send("nib.load(text, base, top)",
-                     ["text": text, "base": coordinator.lastBase ?? NSNull(), "top": savedScroll])
+        webView.send("nib.setImageSizes(sizes); nib.load(text, base, top)",
+                     ["sizes": ImageSizes.scan(text, base: coordinator.lastBase), "text": text,
+                      "base": coordinator.lastBase ?? NSNull(), "top": savedScroll])
         window?.makeFirstResponder(webView)
     }
 

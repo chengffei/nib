@@ -141,7 +141,11 @@ struct EditorCommands: Commands {
             settingToggle("Focus Mode", icon: "scope", isOn: $settings.focusMode)
             settingToggle("Typewriter Mode", icon: "character.cursor.ibeam", isOn: $settings.typewriterMode)
             Divider()
-            settingToggle("Show Sidebar", icon: "sidebar.left", isOn: $settings.showSidebar)
+            settingToggle("Show Sidebar", icon: "sidebar.left", isOn: Binding(
+                get: { controller?.sidebarVisible ?? settings.showSidebar },
+                set: { on in
+                    if let controller, controller.sidebarVisible != on { controller.toggleSidebar() } else if controller == nil { settings.showSidebar = on }
+                }))
             Button { controller?.showOutline.toggle() } label: { Label("Show Outline", systemImage: "list.bullet.indent") }
                 .keyboardShortcut(shortcuts.shortcut("Show Outline"))
                 .disabled(controller == nil)
@@ -206,6 +210,51 @@ struct EditorCommands: Commands {
     }
 }
 
+extension DocumentView {
+    /// Folds the sidebar when the window narrows past foldWidth, and unfolds it when there is room again.
+    func fold(from old: CGFloat, to width: CGFloat) {
+        guard settings.showSidebar else { return }
+        if !controller.sidebarFolded, width < Self.foldWidth, old >= Self.foldWidth || old == 0 || old == width {
+            controller.sidebarFolded = true
+        } else if controller.sidebarFolded, width >= Self.foldWidth + settings.sidebarWidth + 10 {
+            controller.sidebarFolded = false
+        }
+    }
+
+    /// While the sidebar is hidden, resting the pointer on the window's left edge slides it out over the document;
+    /// it slides back 0.16 s after the pointer leaves it.
+    /// One hover region that grows from a 6 pt edge strip to the panel's width, so the pointer never "leaves" while it opens.
+    var peekLayer: some View {
+        ZStack(alignment: .leading) {
+            if peeking {
+                FileSidebar(documentURL: fileURL, tree: tree)
+                    .frame(width: settings.sidebarWidth)
+                    .frame(maxHeight: .infinity)
+                    .background(.regularMaterial)
+                    .clipShape(UnevenRoundedRectangle(bottomTrailingRadius: 10, topTrailingRadius: 10))
+                    .shadow(color: .black.opacity(0.18), radius: 12, x: 2)
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+            }
+        }
+        .frame(width: peeking ? settings.sidebarWidth : 6, alignment: .leading)
+        .frame(maxHeight: .infinity)
+        .contentShape(Rectangle())
+        .onHover { inside in peek(inside) }
+        .animation(.easeOut(duration: 0.18), value: peeking)
+    }
+
+    func peek(_ inside: Bool) {
+        peekClose?.cancel()
+        if inside {
+            peeking = true
+            return
+        }
+        let close = DispatchWorkItem { peeking = false }
+        peekClose = close
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16, execute: close)
+    }
+}
+
 struct DocumentView: View {
     @Binding var text: String
     let fileURL: URL?
@@ -215,9 +264,17 @@ struct DocumentView: View {
     @StateObject private var tree = FileTree()
     @State private var disk = DiskSnapshot()
 
+    @State private var peeking = false
+    @State private var peekClose: DispatchWorkItem?
+
+    /// Below this window width an open sidebar folds away; it comes back only once there is room for it plus a margin,
+    /// so unfolding never makes the document narrower than the width that folded it.
+    static let foldWidth: CGFloat = 900
+
     var body: some View {
+        let shown = settings.showSidebar && !controller.sidebarFolded
         HStack(spacing: 0) {
-            if settings.showSidebar {
+            if shown {
                 FileSidebar(documentURL: fileURL, tree: tree)
                     .frame(width: settings.sidebarWidth)
                     .transition(.move(edge: .leading).combined(with: .opacity))
@@ -225,7 +282,10 @@ struct DocumentView: View {
             }
             EditorView(text: $text, baseDirectory: fileURL?.deletingLastPathComponent().path, controller: controller)
         }
-        .animation(.easeOut(duration: 0.2), value: settings.showSidebar)
+        .animation(.easeOut(duration: 0.2), value: shown)
+        .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { old, width in fold(from: old, to: width) }
+        .onChange(of: settings.showSidebar) { if !settings.showSidebar { controller.sidebarFolded = false } }
+        .overlay(alignment: .leading) { if !shown { peekLayer } }
             .overlay(alignment: .top) {
                 if let kind = controller.finder {
                     FinderPanel(kind: kind, current: fileURL) {

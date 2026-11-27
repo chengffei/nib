@@ -2,8 +2,8 @@
 import { Decoration, EditorView, WidgetType, keymap } from '@codemirror/view'
 import { Prec, StateField } from '@codemirror/state'
 import { syntaxTree } from '@codemirror/language'
-import { activeRanges, links, reading, resolveImage, touches } from './livePreview.js'
-import { keepShortColumns } from './tableColumns.js'
+import { activeRanges, imageSize, links, reading, resolveImage, touches } from './livePreview.js'
+import { autoFit, keepShortColumns } from './tableColumns.js'
 
 function splitRow(line) {
   let s = line.trim()
@@ -37,7 +37,9 @@ function inline(source) {
     .replace(/~~([^~]+)~~/g, '<del>$1</del>')
     .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (source, alt, src) => {
       const url = resolveImage(src.replace(/&amp;/g, '&'))
-      return url ? `<img class="nib-img" alt="${alt}" src="${escapeHTML(url)}">` : source
+      const size = url && imageSize(url)
+      const dims = size ? ` width="${size[0]}" height="${size[1]}"` : ''
+      return url ? `<img class="nib-img" alt="${alt}"${dims} src="${escapeHTML(url)}">` : source
     })
     .replace(/(^|[^!])\[([^\]]+)\]\(([^)\s]+)\)/g, '$1<span class="nib-link" data-href="$3">$2</span>')
     .replace(/&lt;br\s*\/?&gt;/g, '<br>')
@@ -81,6 +83,7 @@ class TableWidget extends WidgetType {
     })
     keepShortColumns(table)
     wrap.appendChild(table)
+    autoFit(table, wrap, () => view.requestMeasure())
     wrap.addEventListener('mousedown', (event) => {
       const isReading = view.state.facet(reading)
       const link = event.target.closest?.('[data-href]')

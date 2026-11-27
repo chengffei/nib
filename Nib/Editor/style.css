@@ -99,6 +99,8 @@ html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
 .nib .nib-image { color: var(--text2); }
 
 .nib .nib-img { display: inline-block; max-width: 100%; height: auto; border-radius: 8px; vertical-align: top; text-indent: 0; }
+.nib-img-pending { opacity: 0; }
+img:not(.nib-img-pending) { transition: opacity 0.15s ease-out; }
 .nib .nib-img-missing { color: var(--text3); font-size: 0.88em; }
 
 /* Mermaid diagrams (edit/read layer and the Typora read layer) */
@@ -136,7 +138,7 @@ html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
 
 /* Rendered tables: thin rules only, no background or border */
 .nib .nib-table-wrap { padding: 4px 0 8px; overflow-x: auto; cursor: text; }
-.nib .nib-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.94em; line-height: 1.45; }
+.nib .nib-table-wrap table { border-collapse: collapse; font-size: 0.94em; line-height: 1.45; }
 .nib .nib-table-wrap th, .nib .nib-table-wrap td { padding: 7px 20px 7px 0; text-align: left; vertical-align: top; border-bottom: 1px solid var(--sep); }
 .nib .nib-table-wrap th { font-weight: 600; }
 .nib .nib-table-wrap tr:last-child td { border-bottom: none; }
@@ -200,6 +202,7 @@ html, body { margin: 0; height: 100%; background: var(--bg, transparent); }
 #nib-typora::-webkit-scrollbar { display: none; }
 /* Typora themes ship a fixed content width (mostly 860px plus breakpoints); here it is overridden to follow the window. */
 #nib-typora #write { max-width: none !important; padding-left: var(--gutter) !important; padding-right: var(--gutter) !important; }
+#nib-typora #write figure.table-figure { overflow-x: auto; }
 #nib-typora[hidden], .nib-find[hidden] { display: none; }
 body.typora-reading .cm-editor { display: none !important; }
 .nib-find-floating { position: fixed; top: 0; left: 0; right: 0; z-index: 30; background: var(--panel); color: var(--text); border-bottom: 0.5px solid var(--sep); }

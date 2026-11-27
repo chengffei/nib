@@ -22,7 +22,7 @@ import { java } from '@codemirror/lang-java'
 import { cpp } from '@codemirror/lang-cpp'
 import { shell } from '@codemirror/legacy-modes/mode/shell'
 import { swift } from '@codemirror/legacy-modes/mode/swift'
-import { links, livePreview, mermaidPreview, post, reading, resolveImage } from './livePreview.js'
+import { imageSizes, links, livePreview, mermaidPreview, post, reading, resolveImage } from './livePreview.js'
 import { refreshMermaid } from './mermaid.js'
 import { createReadView } from './readView.js'
 import { createTyporaTheme } from './typoraTheme.js'
@@ -33,6 +33,7 @@ import { focusModes, setFocusModes } from './focusModes.js'
 import { tables } from './table.js'
 import { htmlToMarkdown, inCode } from './htmlPaste.js'
 import { EXPORT_CSS } from './exportStyle.js'
+import { refitAll } from './tableColumns.js'
 
 const lang = (name, alias, support) => LanguageDescription.of({ name, alias, support })
 const legacy = (mode) => ({ language: StreamLanguage.define(mode), extension: StreamLanguage.define(mode) })
@@ -175,6 +176,8 @@ function applySettings(s) {
   if (typora.setCSS(s.typoraCSS)) syncReader()
   setFocusModes(typeof view !== 'undefined' ? view : null, { focus: s.focusMode, typewriter: s.typewriterMode })
   if (typeof view !== 'undefined') view.requestMeasure()
+  // Font and theme changes alter natural column widths without resizing the containers.
+  requestAnimationFrame(() => refitAll())
   // Diagrams are drawn for light or dark; redraw them when the page around them flips.
   refreshMermaid(document.body)
 }
@@ -488,6 +491,10 @@ window.nib = {
     }
   },
   getText: currentText,
+  /** Image sizes read by the shell from file headers: { path: [width, height] }. Called before load / setText. */
+  setImageSizes(sizes) {
+    for (const [path, size] of Object.entries(sizes || {})) imageSizes.set(path, size)
+  },
   /** A standalone HTML page of the document for Print / Export: the Typora theme if one is selected, else Nib's export style.
    *  Local images keep their nib-file URLs; the shell inlines them for HTML export. */
   async exportHTML(title) {

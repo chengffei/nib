@@ -2,7 +2,8 @@
 // figure.table-figure, ...) so the theme CSS applies as-is. Edit and source modes still use CodeMirror.
 
 import MarkdownIt from 'markdown-it'
-import { keepShortColumns } from './tableColumns.js'
+import { autoFit, keepShortColumns } from './tableColumns.js'
+import { sizeImage } from './livePreview.js'
 import { highlightCode, tagHighlighter, tags as t } from '@lezer/highlight'
 import { t as tr } from './i18n.js'
 import { isDarkAt, isMermaid, mountMermaid, renderMermaid } from './mermaid.js'
@@ -123,6 +124,7 @@ export function createReadView({ codeLanguages, resolveImage, openLink, attachSc
     const root = document.createElement('div')
     root.innerHTML = toHTML(source, meta)
     decorate(root)
+    for (const img of root.querySelectorAll('.nib-img-pending')) img.classList.remove('nib-img-pending')
     const dark = themed && isDarkAt(write)
     await Promise.all(
       [...root.querySelectorAll('.nib-mermaid')].map(async (box) => {
@@ -176,6 +178,7 @@ export function createReadView({ codeLanguages, resolveImage, openLink, attachSc
       figure.className = 'table-figure'
       table.replaceWith(figure)
       figure.appendChild(table)
+      autoFit(table, figure)
     }
     for (const heading of write.querySelectorAll('h1, h2, h3, h4, h5, h6')) {
       heading.id = slug(heading.textContent)
@@ -183,8 +186,10 @@ export function createReadView({ codeLanguages, resolveImage, openLink, attachSc
     }
     for (const img of write.querySelectorAll('img')) {
       const url = resolveImage(img.getAttribute('src') || '')
-      if (url) img.src = url
-      else img.removeAttribute('src')
+      if (url) {
+        sizeImage(img, url)
+        img.src = url
+      } else img.removeAttribute('src')
     }
   }
 

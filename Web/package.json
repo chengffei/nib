@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "esbuild src/main.js --bundle --minify --format=iife --target=safari17 --outfile=../Nib/Editor/editor.js && cp src/index.html src/style.css node_modules/mermaid/dist/mermaid.min.js ../Nib/Editor/"
+    "build": "esbuild src/main.js --bundle --minify --format=iife --target=safari17 --outfile=../Nib/Editor/editor.js && cp src/index.html src/style.css node_modules/mermaid/dist/mermaid.min.js ../Nib/Editor/",
+    "test": "node --test test/"
   },
   "dependencies": {
     "@codemirror/commands": "^6",

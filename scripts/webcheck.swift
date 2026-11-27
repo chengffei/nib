@@ -11,10 +11,17 @@ let output = URL(fileURLWithPath: args[2])
 let dark = args.count > 3 && args[3] == "dark"
 let script = args.count > 4 ? args[4] : "null"
 
+// No fixed sleeps: the checks start when the editor reports ready, and settle by waiting for rendered frames.
 final class Handler: NSObject, WKScriptMessageHandler {
     var messages: [[String: Any]] = []
+    var onReady: (() -> Void)?
     func userContentController(_ c: WKUserContentController, didReceive message: WKScriptMessage) {
-        if let body = message.body as? [String: Any] { messages.append(body) }
+        guard let body = message.body as? [String: Any] else { return }
+        messages.append(body)
+        if body["type"] as? String == "ready", let ready = onReady {
+            onReady = nil
+            ready()
+        }
     }
 }
 
@@ -43,14 +50,20 @@ func after(_ seconds: Double, _ block: @escaping @MainActor () -> Void) {
     DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { MainActor.assumeIsolated(block) }
 }
 
-after(1.2) {
+let settle = "await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))"
+// A page that never reports ready is a failure, not something to wait out.
+after(10) {
+    print("timed out: the editor never reported ready")
+    exit(1)
+}
+handler.onReady = {
     // callAsyncJavaScript: the script body may use await (e.g. wait a few frames for decorations to settle).
-    webView.callAsyncJavaScript(script, arguments: [:], in: nil, in: .page) { outcome in
+    webView.callAsyncJavaScript("\(settle); " + script, arguments: [:], in: nil, in: .page) { outcome in
         switch outcome {
         case .failure(let error): print("JS error:", error)
         case .success(let result): if !(result is NSNull) { print("JS result:", result) }
         }
-        after(0.5) {
+        webView.callAsyncJavaScript(settle, arguments: [:], in: nil, in: .page) { _ in
             webView.evaluateJavaScript("nib.getText()") { value, _ in
                 print("round-trip identical:", (value as? String) == text)
                 print("messages received:", handler.messages.map { $0["type"] as? String ?? "?" })
